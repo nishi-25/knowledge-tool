@@ -2,6 +2,7 @@ import base64
 import hashlib
 import hmac
 import json
+import os
 import secrets
 import time
 from datetime import datetime, timezone
@@ -44,6 +45,11 @@ def _get_secret_key() -> bytes:
     LOCAL_ROOT.mkdir(parents=True, exist_ok=True)
     key = secrets.token_bytes(32)
     _SECRET_KEY_FILE.write_bytes(key)
+    try:
+        # このファイルを読めるとどのユーザーIDでもセッションを偽造できるため、所有者のみ読める権限にする
+        os.chmod(_SECRET_KEY_FILE, 0o600)
+    except OSError:
+        pass
     return key
 
 

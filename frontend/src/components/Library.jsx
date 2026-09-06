@@ -4,6 +4,7 @@ import Button from './ui/Button.jsx';
 import CommentThread from './CommentThread.jsx';
 import { fmtDate, folderMeta } from '../utils.js';
 import { renderMermaidIn } from '../mermaidUtils.js';
+import { sanitizeArticleHtml } from '../sanitizeHtml.js';
 
 export default function Library({
   favoritesOnly, query, onQueryChange, folders, folderChipsActive, onToggleFolderFilter,
@@ -81,7 +82,7 @@ export default function Library({
                 <span key={t} style={{ fontSize: '0.72rem', padding: '0.25em 0.7em', borderRadius: 999, background: 'var(--slate-100)', color: 'var(--text-muted)' }}>#{t}</span>
               ))}
             </div>
-            <div ref={bodyRef} className="kv-richtext kv-readonly" dangerouslySetInnerHTML={{ __html: current.bodyHtml }} />
+            <div ref={bodyRef} className="kv-richtext kv-readonly" dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(current.bodyHtml) }} />
 
             <div style={{ marginTop: '2rem', paddingTop: '1.4rem', borderTop: '1px solid var(--border)' }}>
               <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.7rem' }}>関連記事</div>

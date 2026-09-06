@@ -1,6 +1,7 @@
+import hmac
 from typing import Optional
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 
 from ..admin_store import (
     ADMIN_SENTINEL_ID,
@@ -11,6 +12,7 @@ from ..admin_store import (
 from ..auth import create_session_token, hash_password, users_store, verify_password, verify_session_token
 from ..config import APP_MODE
 from ..membership import get_member, owner_count
+from ..rate_limit import enforce_rate_limit
 from ..schemas import AdminChangePasswordIn, AdminLoginIn, AdminLoginSettingsIn, AdminMoveArticleIn, AdminSetupIn
 from ..store import get_articles_store, get_folders_store, projects_index_store
 
@@ -62,25 +64,31 @@ def admin_status():
 
 
 @router.post("/setup")
-def admin_setup(payload: AdminSetupIn, response: Response):
+def admin_setup(payload: AdminSetupIn, request: Request, response: Response):
+    enforce_rate_limit(request, "admin-setup", max_attempts=10, window_seconds=60)
     cfg = get_admin_config()
     if cfg.get("configured"):
         raise HTTPException(status_code=409, detail="管理者アカウントは既に設定されています")
+    expected_token = cfg.get("setupToken") or ""
+    if not expected_token or not hmac.compare_digest(payload.setupToken.strip(), expected_token):
+        raise HTTPException(status_code=403, detail="初期設定トークンが正しくありません。サーバーの起動ログを確認してください")
     username = payload.username.strip()
     if not username:
         raise HTTPException(status_code=400, detail="ユーザー名を入力してください")
-    if len(payload.password) < 4:
-        raise HTTPException(status_code=400, detail="パスワードは4文字以上にしてください")
+    if len(payload.password) < 8:
+        raise HTTPException(status_code=400, detail="パスワードは8文字以上にしてください")
     cfg["username"] = username
     cfg["passwordHash"] = hash_password(payload.password)
     cfg["configured"] = True
+    cfg.pop("setupToken", None)
     save_admin_config(cfg)
     _set_admin_cookie(response)
     return {"ok": True}
 
 
 @router.post("/login")
-def admin_login(payload: AdminLoginIn, response: Response):
+def admin_login(payload: AdminLoginIn, request: Request, response: Response):
+    enforce_rate_limit(request, "admin-login", max_attempts=10, window_seconds=60)
     cfg = get_admin_config()
     if not cfg.get("configured"):
         raise HTTPException(status_code=400, detail="管理者アカウントが未設定です。先に初期設定を行ってください")
@@ -106,8 +114,8 @@ def change_password(payload: AdminChangePasswordIn, _: None = Depends(get_curren
     cfg = get_admin_config()
     if not verify_password(payload.currentPassword, cfg["passwordHash"]):
         raise HTTPException(status_code=400, detail="現在のパスワードが正しくありません")
-    if len(payload.newPassword) < 4:
-        raise HTTPException(status_code=400, detail="新しいパスワードは4文字以上にしてください")
+    if len(payload.newPassword) < 8:
+        raise HTTPException(status_code=400, detail="新しいパスワードは8文字以上にしてください")
     cfg["passwordHash"] = hash_password(payload.newPassword)
     save_admin_config(cfg)
     return {"ok": True}

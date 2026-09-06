@@ -116,6 +116,7 @@ class AdminLoginIn(BaseModel):
 class AdminSetupIn(BaseModel):
     username: str
     password: str
+    setupToken: str
 
 
 class AdminChangePasswordIn(BaseModel):

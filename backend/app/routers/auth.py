@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from ..auth import (
     users_store,
@@ -15,10 +15,15 @@ from ..auth import (
 )
 from ..schemas import SignupIn, LoginIn
 from ..admin_store import is_login_enabled
+from ..rate_limit import enforce_rate_limit
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 COOKIE_MAX_AGE = 30 * 86400
+
+# ユーザーが存在しない場合でも本物のログインとほぼ同じ処理時間になるようにするための
+# ダミーハッシュ（タイミング差によるメールアドレス存在確認=ユーザー列挙を防ぐ）。
+_DUMMY_PASSWORD_HASH = hash_password("dummy-not-a-real-account-password")
 
 
 def _set_session_cookie(response: Response, user_id: str) -> str:
@@ -35,7 +40,8 @@ def _set_session_cookie(response: Response, user_id: str) -> str:
 
 
 @router.post("/signup")
-def signup(payload: SignupIn, response: Response):
+def signup(payload: SignupIn, request: Request, response: Response):
+    enforce_rate_limit(request, "signup", max_attempts=10, window_seconds=60)
     if not is_login_enabled():
         raise HTTPException(status_code=403, detail="現在、新規登録・ログインは無効化されています")
     email = payload.email.strip().lower()
@@ -63,11 +69,15 @@ def signup(payload: SignupIn, response: Response):
 
 
 @router.post("/login")
-def login(payload: LoginIn, response: Response):
+def login(payload: LoginIn, request: Request, response: Response):
+    enforce_rate_limit(request, "login", max_attempts=10, window_seconds=60)
     if not is_login_enabled():
         raise HTTPException(status_code=403, detail="現在、新規登録・ログインは無効化されています")
     user = find_user_by_email(payload.email)
-    if user is None or not verify_password(payload.password, user["passwordHash"]):
+    if user is None:
+        verify_password(payload.password, _DUMMY_PASSWORD_HASH)  # タイミングを揃える
+        raise HTTPException(status_code=401, detail="メールアドレスまたはパスワードが正しくありません")
+    if not verify_password(payload.password, user["passwordHash"]):
         raise HTTPException(status_code=401, detail="メールアドレスまたはパスワードが正しくありません")
     token = _set_session_cookie(response, user["id"])
     return {**public_user(user), "token": token}

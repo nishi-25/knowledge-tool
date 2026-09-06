@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Button from './ui/Button.jsx';
 import Input from './ui/Input.jsx';
+import { escapeHtmlAttr, isSafeUrl } from '../utils.js';
 
 const LARGE_FILE_WARNING_BYTES = 20 * 1024 * 1024; // 20MB
 
@@ -13,7 +14,8 @@ export function videoEmbedHtmlFromUrl(url) {
   if (vimeo) {
     return `<div style="position:relative;padding-top:56.25%;margin:0.8rem 0;"><iframe src="https://player.vimeo.com/video/${vimeo[1]}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;border-radius:10px;" allowfullscreen></iframe></div><p><br></p>`;
   }
-  return `<video controls src="${url}" style="max-width:100%;border-radius:10px;margin:0.8rem 0;"></video><p><br></p>`;
+  if (!isSafeUrl(url)) return '';
+  return `<video controls src="${escapeHtmlAttr(url)}" style="max-width:100%;border-radius:10px;margin:0.8rem 0;"></video><p><br></p>`;
 }
 
 export default function VideoEmbedModal({ open, onClose, onSubmit }) {
@@ -28,7 +30,12 @@ export default function VideoEmbedModal({ open, onClose, onSubmit }) {
 
   const submitUrl = () => {
     if (!url.trim()) return;
-    onSubmit(videoEmbedHtmlFromUrl(url.trim()));
+    const html = videoEmbedHtmlFromUrl(url.trim());
+    if (!html) {
+      setWarning('このURLは埋め込めません。http(s)で始まる動画URLを入力してください。');
+      return;
+    }
+    onSubmit(html);
     close();
   };
 

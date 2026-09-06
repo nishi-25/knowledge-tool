@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import project, folders, tags, articles, tools, comments, system, fs, auth, invites, admin, ping
 from .store import ensure_seeded
+from .admin_store import print_setup_token_if_needed
+from .config import APP_MODE
 
 app = FastAPI(title="Knowledge View API")
 
@@ -17,6 +19,8 @@ app.add_middleware(
 @app.on_event("startup")
 def on_startup():
     ensure_seeded()
+    if APP_MODE != "desktop":
+        print_setup_token_if_needed()
 
 
 app.include_router(project.router)

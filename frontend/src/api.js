@@ -122,7 +122,7 @@ export const api = {
   deleteComment: (commentId) => request(`/comments/${commentId}`, { method: 'DELETE' }),
 
   adminGetStatus: () => request('/admin/status'),
-  adminSetup: (username, password) => request('/admin/setup', { method: 'POST', body: JSON.stringify({ username, password }) }),
+  adminSetup: (username, password, setupToken) => request('/admin/setup', { method: 'POST', body: JSON.stringify({ username, password, setupToken }) }),
   adminLogin: (username, password) => request('/admin/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   adminLogout: () => request('/admin/logout', { method: 'POST' }),
   adminMe: () => request('/admin/me'),

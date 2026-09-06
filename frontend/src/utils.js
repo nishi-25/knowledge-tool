@@ -34,6 +34,22 @@ export function calloutVariants() {
   ];
 }
 
+export function escapeHtmlAttr(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+// href/src用: javascript: 等の実行可能スキームを拒否し、http(s)・data・相対URLのみ許可する。
+export function isSafeUrl(url) {
+  const trimmed = String(url ?? '').trim();
+  if (!trimmed) return false;
+  if (/^(https?:|data:)/i.test(trimmed)) return true;
+  return !/^[a-z][a-z0-9+.-]*:/i.test(trimmed);
+}
+
 export function stripHtml(html) {
   return (html || '')
     .replace(/<(p|div|br|li)[^>]*>/gi, ' ')

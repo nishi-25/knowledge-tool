@@ -9,7 +9,8 @@ import TextEmbedModal from './TextEmbedModal.jsx';
 import VideoEmbedModal from './VideoEmbedModal.jsx';
 import CalendarModal from './CalendarModal.jsx';
 import { api } from '../api.js';
-import { calloutMeta, calloutVariants } from '../utils.js';
+import { calloutMeta, calloutVariants, escapeHtmlAttr } from '../utils.js';
+import { sanitizeArticleHtml } from '../sanitizeHtml.js';
 import { renderMermaidIn, encodeMermaidSource, decodeMermaidSource } from '../mermaidUtils.js';
 
 const COLOR_SWATCHES = [
@@ -97,7 +98,7 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
 
   useEffect(() => {
     if (bodyEditRef.current) {
-      bodyEditRef.current.innerHTML = initialDraft.bodyHtml || '';
+      bodyEditRef.current.innerHTML = sanitizeArticleHtml(initialDraft.bodyHtml || '');
       renderMermaidIn(bodyEditRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -117,12 +118,23 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0 && el.contains(sel.anchorNode)) {
       savedRangeRef.current = sel.getRangeAt(0).cloneRange();
-    } else {
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      range.collapse(false);
-      savedRangeRef.current = range;
+      return;
     }
+    // フォールバック: 末尾の要素が挿入ブロック（contenteditable="false"）だと、
+    // selectNodeContents(el)で作った範囲はルートdivの子要素境界を指すだけになり、
+    // execCommand('insertHTML')がその位置では何もせず失敗することがある（Chromiumの挙動）。
+    // 必ずテキストを持てる要素（<p>）の中にカーソルを置けるようにする。
+    let last = el.lastElementChild;
+    const isInsertBlock = (node) => node && (node.hasAttribute('data-kv-block') || node.getAttribute('contenteditable') === 'false');
+    if (!last || isInsertBlock(last) || last.tagName !== 'P') {
+      last = document.createElement('p');
+      last.innerHTML = '<br>';
+      el.appendChild(last);
+    }
+    const range = document.createRange();
+    range.selectNodeContents(last);
+    range.collapse(false);
+    savedRangeRef.current = range;
   };
 
   const openInsertModal = () => {
@@ -267,7 +279,7 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      insertHtmlAtCursor(`<img src="${reader.result}" alt="${file.name}" style="max-width:100%;border-radius:8px;margin:0.6rem 0;" />`);
+      insertHtmlAtCursor(`<img src="${reader.result}" alt="${escapeHtmlAttr(file.name)}" style="max-width:100%;border-radius:8px;margin:0.6rem 0;" />`);
     };
     reader.readAsDataURL(file);
   };
@@ -452,7 +464,7 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
         open={markdownModalOpen}
         title="Markdownを挿入"
         placeholder={'# 見出し\n\n本文をMarkdownで入力...'}
-        toHtml={(text) => marked.parse(text)}
+        toHtml={(text) => sanitizeArticleHtml(marked.parse(text))}
         onClose={() => setMarkdownModalOpen(false)}
         onSubmit={(html) => { insertHtmlAtCursor(html); setMarkdownModalOpen(false); }}
       />
@@ -460,7 +472,7 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
         open={htmlModalOpen}
         title="HTMLを挿入"
         placeholder={'<div>ここにHTMLを入力...</div>'}
-        toHtml={(text) => text}
+        toHtml={(text) => sanitizeArticleHtml(text)}
         onClose={() => setHtmlModalOpen(false)}
         onSubmit={(html) => { insertHtmlAtCursor(html); setHtmlModalOpen(false); }}
       />

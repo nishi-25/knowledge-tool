@@ -6,7 +6,7 @@ function ensureInit() {
     mermaid.initialize({
       startOnLoad: false,
       theme: 'neutral',
-      securityLevel: 'loose',
+      securityLevel: 'strict',
       fontFamily: "'Zen Maru Gothic', 'Inter', sans-serif",
     });
     initialized = true;

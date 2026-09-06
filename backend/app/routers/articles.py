@@ -6,6 +6,7 @@ from ..schemas import ArticleIn
 from ..store import get_articles_store, strip_html, next_article_id
 from ..auth import get_current_user
 from ..membership import resolve_current_project, require_owner
+from ..html_sanitize import sanitize_body_html
 
 router = APIRouter(prefix="/api/articles", tags=["articles"])
 
@@ -41,7 +42,8 @@ def create_article(payload: ArticleIn, user: dict = Depends(get_current_user)):
     project = resolve_current_project(user)
     require_owner(project, user)
     articles_store = get_articles_store(project["id"])
-    body_text = strip_html(payload.bodyHtml)
+    safe_body_html = sanitize_body_html(payload.bodyHtml)
+    body_text = strip_html(safe_body_html)
     article = {
         "id": next_article_id(articles_store),
         "title": payload.title.strip(),
@@ -51,7 +53,7 @@ def create_article(payload: ArticleIn, user: dict = Depends(get_current_user)):
         "views": 0,
         "favorite": False,
         "excerpt": body_text[:60],
-        "bodyHtml": payload.bodyHtml,
+        "bodyHtml": safe_body_html,
     }
     articles_store.write(str(article["id"]), article)
     return article
@@ -65,14 +67,15 @@ def update_article(article_id: int, payload: ArticleIn, user: dict = Depends(get
     existing = articles_store.read(str(article_id))
     if existing is None:
         raise HTTPException(status_code=404, detail="記事が見つかりません")
-    body_text = strip_html(payload.bodyHtml)
+    safe_body_html = sanitize_body_html(payload.bodyHtml)
+    body_text = strip_html(safe_body_html)
     existing.update({
         "title": payload.title.strip(),
         "folder": payload.folder or None,
         "tags": payload.tags,
         "updated": date.today().isoformat(),
         "excerpt": body_text[:60] or existing.get("excerpt", ""),
-        "bodyHtml": payload.bodyHtml,
+        "bodyHtml": safe_body_html,
     })
     articles_store.write(str(article_id), existing)
     return existing

@@ -58,8 +58,8 @@ function PasswordChangeCard() {
   const submit = async () => {
     setError('');
     setSuccess(false);
-    if (newPassword.length < 4) {
-      setError('新しいパスワードは4文字以上にしてください');
+    if (newPassword.length < 8) {
+      setError('新しいパスワードは8文字以上にしてください');
       return;
     }
     if (newPassword !== confirmPassword) {

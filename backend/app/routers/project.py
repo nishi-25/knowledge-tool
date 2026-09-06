@@ -21,12 +21,28 @@ router = APIRouter(prefix="/api/projects", tags=["project"])
 
 
 def _present_project(project: dict, user: dict) -> dict:
-    masked = mask_storage_config(project)
-    if project.get("storageProvider", "local") == "local":
-        masked["resolvedPath"] = resolved_local_path(project, project["id"])
     member = get_member(project, user["id"])
-    masked["role"] = member.get("role") if member else None
-    return masked
+    role = member.get("role") if member else None
+
+    result = {
+        "id": project["id"],
+        "name": project["name"],
+        "storageProvider": project.get("storageProvider", "local"),
+        "role": role,
+        "createdAt": project.get("createdAt"),
+    }
+    if project.get("storageProvider", "local") == "local":
+        result["resolvedPath"] = resolved_local_path(project, project["id"])
+
+    if role == "owner":
+        # 保存先の詳細設定（バケット名・フォルダID等、シークレットはmask_storage_configで除去済み）は
+        # オーナーのみが必要とする情報のため、メンバーには返さない。
+        masked = mask_storage_config(project)
+        for key, value in masked.items():
+            if key not in ("id", "name", "members", "ownerId", "inviteToken"):
+                result[key] = value
+
+    return result
 
 
 def _my_projects(user: dict) -> list[dict]:
