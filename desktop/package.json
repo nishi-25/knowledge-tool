@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "description": "Knowledge View デスクトップ版",
-  "author": "nishi-25",
+  "author": {
+    "name": "nishi-25",
+    "email": "smithunited.25@gmail.com"
+  },
+  "homepage": "https://nishi-25.github.io/knowledge-tool/",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -20,7 +24,8 @@
     "publish": {
       "provider": "github",
       "owner": "nishi-25",
-      "repo": "knowledge-tool"
+      "repo": "knowledge-tool",
+      "releaseType": "release"
     },
     "files": [
       "main.js",
