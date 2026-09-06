@@ -88,6 +88,8 @@
 cd knowledge-tool</pre>
         <h4>2. 起動</h4>
         <pre class="code">docker compose up --build</pre>
+        <p>ポート番号を変えたい場合（既定は8080）:</p>
+        <pre class="code">KV_WEB_PORT=9090 docker compose up --build</pre>
         <h4>3. アクセス</h4>
         <p>ブラウザで <code>http://localhost:8080</code> を開きます。初回アクセス時にアカウント作成、続けてプロジェクト作成のセットアップ画面が表示されます。</p>
       </div>

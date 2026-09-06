@@ -11,7 +11,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "8080:80"
+      - "${KV_WEB_PORT:-8080}:80"
     depends_on:
       - backend
     restart: unless-stopped
