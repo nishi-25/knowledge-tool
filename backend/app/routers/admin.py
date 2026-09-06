@@ -1,7 +1,11 @@
+import csv
 import hmac
+import io
+import uuid
+from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Cookie, Depends, File, HTTPException, Request, Response, UploadFile
 
 from ..admin_store import (
     ADMIN_SENTINEL_ID,
@@ -9,11 +13,18 @@ from ..admin_store import (
     get_admin_config,
     save_admin_config,
 )
-from ..auth import create_session_token, hash_password, users_store, verify_password, verify_session_token
+from ..auth import create_session_token, find_user_by_email, hash_password, users_store, verify_password, verify_session_token
 from ..config import APP_MODE
 from ..membership import get_member, owner_count
 from ..rate_limit import enforce_rate_limit
-from ..schemas import AdminChangePasswordIn, AdminLoginIn, AdminLoginSettingsIn, AdminMoveArticleIn, AdminSetupIn
+from ..schemas import (
+    AdminChangePasswordIn,
+    AdminCreateUserIn,
+    AdminLoginIn,
+    AdminLoginSettingsIn,
+    AdminMoveArticleIn,
+    AdminSetupIn,
+)
 from ..store import get_articles_store, get_folders_store, projects_index_store
 
 
@@ -134,6 +145,126 @@ def update_login_settings(payload: AdminLoginSettingsIn, _: None = Depends(get_c
     cfg["loginEnabled"] = payload.loginEnabled
     save_admin_config(cfg)
     return {"loginEnabled": cfg["loginEnabled"]}
+
+
+# --- 全ユーザーの管理 -------------------------------------------------------
+
+def _public_user(u: dict) -> dict:
+    return {"id": u["id"], "email": u["email"], "displayName": u["displayName"], "createdAt": u.get("createdAt")}
+
+
+def _create_user_record(email: str, display_name: str, password: str) -> dict:
+    email = email.strip().lower()
+    if not email or "@" not in email:
+        raise ValueError("メールアドレスを正しく入力してください")
+    if not display_name.strip():
+        raise ValueError("表示名を入力してください")
+    if len(password) < 6:
+        raise ValueError("パスワードは6文字以上にしてください")
+    if find_user_by_email(email) is not None:
+        raise ValueError("このメールアドレスは既に登録されています")
+    user_id = uuid.uuid4().hex
+    user = {
+        "id": user_id,
+        "email": email,
+        "displayName": display_name.strip(),
+        "passwordHash": hash_password(password),
+        "currentProjectId": None,
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+    }
+    users_store.write(user_id, user)
+    return user
+
+
+@router.get("/users")
+def list_all_users(_: None = Depends(get_current_admin)):
+    users = users_store.list()
+    users.sort(key=lambda u: u.get("createdAt", ""), reverse=True)
+    return [_public_user(u) for u in users]
+
+
+@router.post("/users")
+def create_user(payload: AdminCreateUserIn, _: None = Depends(get_current_admin)):
+    try:
+        user = _create_user_record(payload.email, payload.displayName, payload.password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return _public_user(user)
+
+
+@router.delete("/users/{user_id}")
+def delete_user(user_id: str, _: None = Depends(get_current_admin)):
+    if users_store.read(user_id) is None:
+        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+    users_store.delete(user_id)
+    # 各プロジェクトのメンバー一覧からも削除し、参照切れを残さない
+    for project in projects_index_store.list():
+        members = project.get("members", [])
+        if any(m["userId"] == user_id for m in members):
+            project["members"] = [m for m in members if m["userId"] != user_id]
+            projects_index_store.write(project["id"], project)
+    return {"ok": True}
+
+
+@router.get("/users/import-template")
+def download_user_import_template(_: None = Depends(get_current_admin)):
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["email", "displayName", "password"])
+    writer.writerow(["taro.yamada@example.com", "山田太郎", "password123"])
+    csv_bytes = ("\ufeff" + buf.getvalue()).encode("utf-8")
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="user_import_template.csv"'},
+    )
+
+
+@router.get("/users/export")
+def export_users(_: None = Depends(get_current_admin)):
+    users = users_store.list()
+    users.sort(key=lambda u: u.get("createdAt", ""))
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["email", "displayName", "createdAt"])
+    for u in users:
+        writer.writerow([u.get("email", ""), u.get("displayName", ""), u.get("createdAt", "")])
+    csv_bytes = ("\ufeff" + buf.getvalue()).encode("utf-8")
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="users_export.csv"'},
+    )
+
+
+@router.post("/users/import")
+async def import_users(file: UploadFile = File(...), _: None = Depends(get_current_admin)):
+    raw = await file.read()
+    try:
+        text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="ファイルの文字コードを読み取れませんでした（UTF-8で保存してください）")
+
+    reader = csv.DictReader(io.StringIO(text))
+    required = {"email", "displayName", "password"}
+    if reader.fieldnames is None or not required.issubset(set(reader.fieldnames)):
+        raise HTTPException(status_code=400, detail="CSVの列は email,displayName,password にしてください")
+
+    created = []
+    skipped = []
+    for i, row in enumerate(reader, start=2):  # 1行目はヘッダー
+        email = (row.get("email") or "").strip()
+        display_name = (row.get("displayName") or "").strip()
+        password = row.get("password") or ""
+        if not email and not display_name and not password:
+            continue  # 空行はスキップ
+        try:
+            user = _create_user_record(email, display_name, password)
+            created.append({"email": user["email"], "displayName": user["displayName"]})
+        except ValueError as e:
+            skipped.append({"row": i, "email": email, "reason": str(e)})
+
+    return {"createdCount": len(created), "created": created, "skippedCount": len(skipped), "skipped": skipped}
 
 
 # --- 全プロジェクトの閲覧・管理 ---------------------------------------------

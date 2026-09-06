@@ -123,6 +123,20 @@ export const api = {
 
   adminGetStatus: () => request('/admin/status'),
   adminSetup: (username, password, setupToken) => request('/admin/setup', { method: 'POST', body: JSON.stringify({ username, password, setupToken }) }),
+  adminListUsers: () => request('/admin/users'),
+  adminCreateUser: (email, displayName, password) => request('/admin/users', { method: 'POST', body: JSON.stringify({ email, displayName, password }) }),
+  adminDeleteUser: (userId) => request(`/admin/users/${userId}`, { method: 'DELETE' }),
+  adminImportUsersUrl: () => `${currentBase()}/admin/users/import`,
+  adminExportUsersUrl: () => `${currentBase()}/admin/users/export`,
+  adminImportTemplateUrl: () => `${currentBase()}/admin/users/import-template`,
+  adminImportUsers: async (file) => {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch(`${currentBase()}/admin/users/import`, { method: 'POST', credentials: 'include', body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || `Request failed: ${res.status}`);
+    return data;
+  },
   adminLogin: (username, password) => request('/admin/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   adminLogout: () => request('/admin/logout', { method: 'POST' }),
   adminMe: () => request('/admin/me'),

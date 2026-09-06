@@ -96,6 +96,120 @@ function PasswordChangeCard() {
   );
 }
 
+function UsersCard() {
+  const [users, setUsers] = useState(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [email, setEmail] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [importSummary, setImportSummary] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useState(() => ({ current: null }))[0];
+
+  const refresh = async () => setUsers(await api.adminListUsers());
+  useEffect(() => { refresh(); }, []);
+
+  const addUser = async () => {
+    setError('');
+    try {
+      await api.adminCreateUser(email.trim(), displayName.trim(), password);
+      setEmail(''); setDisplayName(''); setPassword(''); setShowAdd(false);
+      await refresh();
+    } catch (e) {
+      setError(e.message || '作成に失敗しました');
+    }
+  };
+
+  const removeUser = async (id) => {
+    try {
+      setError('');
+      await api.adminDeleteUser(id);
+      await refresh();
+    } catch (e) {
+      setError(e.message || '削除に失敗しました');
+    }
+  };
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setImporting(true);
+    setError('');
+    setImportSummary(null);
+    try {
+      const result = await api.adminImportUsers(file);
+      setImportSummary(result);
+      await refresh();
+    } catch (err) {
+      setError(err.message || 'インポートに失敗しました');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  return (
+    <Card title={`全ユーザー（${users?.length ?? '...'}）`} icon="people" style={{ marginBottom: '1.2rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+        <Button variant="outline" size="sm" icon="person-plus" onClick={() => setShowAdd((v) => !v)}>ユーザーを追加</Button>
+        <Button variant="outline" size="sm" icon="upload" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+          {importing ? 'インポート中...' : 'CSVからインポート'}
+        </Button>
+        <a href={api.adminImportTemplateUrl()} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.3em' }}>
+          <i className="bi bi-file-earmark-arrow-down" />テンプレートをダウンロード
+        </a>
+        <a href={api.adminExportUsersUrl()} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.3em', marginLeft: 'auto' }}>
+          <i className="bi bi-file-earmark-arrow-up" />エクスポート
+        </a>
+        <input ref={(el) => { fileInputRef.current = el; }} type="file" accept=".csv" onChange={handleImportFile} style={{ display: 'none' }} />
+      </div>
+
+      {showAdd && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '0.5rem', marginBottom: '1rem', alignItems: 'end' }}>
+          <Input label="メールアドレス" value={email} onChange={setEmail} height={36} />
+          <Input label="表示名" value={displayName} onChange={setDisplayName} height={36} />
+          <div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 6 }}>パスワード</div>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="kv-input" style={{ height: 36, width: '100%', boxSizing: 'border-box' }} />
+          </div>
+          <Button variant="primary" size="sm" style={{ height: 36 }} disabled={!email.trim() || !displayName.trim() || !password} onClick={addUser}>作成</Button>
+        </div>
+      )}
+
+      {error && (
+        <div style={{ fontSize: '0.8rem', color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '0.5rem 0.7rem', marginBottom: '1rem' }}>{error}</div>
+      )}
+
+      {importSummary && (
+        <div style={{ fontSize: '0.8rem', color: 'var(--primary-dark)', background: 'var(--note-bg)', borderRadius: 8, padding: '0.6rem 0.8rem', marginBottom: '1rem' }}>
+          {importSummary.createdCount}件作成しました。
+          {importSummary.skippedCount > 0 && (
+            <>
+              {' '}{importSummary.skippedCount}件スキップ：
+              {importSummary.skipped.map((s, i) => (
+                <span key={i}>{i > 0 && '、'}{s.row}行目（{s.email || '(空)'}）: {s.reason}</span>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+
+      {users === null && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>読み込み中...</div>}
+      {users?.length === 0 && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>まだユーザーがいません</div>}
+      {users?.map((u) => (
+        <div key={u.id} data-user-id={u.id} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.5rem 0', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{u.displayName}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{u.email}</div>
+          </div>
+          <Button variant="ghost" size="sm" icon="person-x" onClick={() => removeUser(u.id)}>削除</Button>
+        </div>
+      ))}
+    </Card>
+  );
+}
+
 function ProjectsCard({ onSelect }) {
   const [projects, setProjects] = useState(null);
 
@@ -192,6 +306,7 @@ export default function AdminApp() {
 
         <LoginSettingsCard />
         <PasswordChangeCard />
+        <UsersCard />
         <ProjectsCard
           key={projectsKey}
           onSelect={(id) => setSelectedProjectId(id)}

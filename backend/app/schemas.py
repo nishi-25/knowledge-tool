@@ -124,6 +124,12 @@ class AdminChangePasswordIn(BaseModel):
     newPassword: str
 
 
+class AdminCreateUserIn(BaseModel):
+    email: str
+    displayName: str
+    password: str
+
+
 class AdminLoginSettingsIn(BaseModel):
     loginEnabled: bool
 

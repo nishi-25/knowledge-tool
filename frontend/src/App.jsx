@@ -11,6 +11,7 @@ import Editor from './components/Editor.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
 import InviteScreen from './components/InviteScreen.jsx';
 import AdminApp from './components/AdminApp.jsx';
+import TemplatePickerModal from './components/TemplatePickerModal.jsx';
 
 function parseInviteToken() {
   const match = window.location.pathname.match(/^\/invite\/([^/]+)/);
@@ -47,6 +48,7 @@ export default function App() {
   const [activeFolder, setActiveFolder] = useState('');
   const [activeTag, setActiveTag] = useState(null);
   const [editorState, setEditorState] = useState(null);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
 
   const isOwner = currentProject.role === 'owner';
 
@@ -153,9 +155,14 @@ export default function App() {
 
   const startNewArticle = () => {
     if (!isOwner) return;
+    setTemplatePickerOpen(true);
+  };
+
+  const beginArticleFromTemplate = (template) => {
+    setTemplatePickerOpen(false);
     setEditorState({
       draftId: null,
-      initialDraft: { title: '', folder: '', bodyHtml: '' },
+      initialDraft: { title: template.titlePrefix || '', folder: '', bodyHtml: template.bodyHtml || '' },
       initialTags: [],
     });
     setView('editor');
@@ -378,6 +385,12 @@ export default function App() {
           onSave={saveDraft}
         />
       )}
+
+      <TemplatePickerModal
+        open={templatePickerOpen}
+        onClose={() => setTemplatePickerOpen(false)}
+        onSelect={beginArticleFromTemplate}
+      />
     </div>
   );
 }
