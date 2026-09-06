@@ -63,7 +63,7 @@ export default function Library({
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '2.4rem 3rem' }}>
         {current ? (
-          <div style={{ maxWidth: 720 }}>
+          <div style={{ width: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '0.8rem' }}>
               <span style={{ fontSize: '0.78rem', fontWeight: 700, color: current.folderMeta.color, whiteSpace: 'nowrap', flexShrink: 0 }}>
                 <i className={current.folderMeta.icon} style={{ marginRight: 4 }} />{current.folderMeta.label}

@@ -24,7 +24,7 @@ export function calendarHtml(year, month) {
     .join('');
 
   return (
-    `<div data-kv-block="calendar" contenteditable="false" style="margin:0.8rem 0; max-width:420px;">` +
+    `<div data-kv-block="calendar" contenteditable="false" style="margin:0.8rem 0; width:420px; max-width:100%; box-sizing:border-box;">` +
     `<div style="display:flex; align-items:center; margin-bottom:0.4rem;">` +
     `<span style="font-size:0.85rem;font-weight:700;color:var(--text-strong);">${year}年${month}月</span>` +
     `<span data-kv-remove contenteditable="false" style="margin-left:auto;cursor:pointer;color:var(--text-muted);font-size:0.8rem;"><i class="bi bi-x-lg"></i></span>` +

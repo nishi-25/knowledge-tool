@@ -184,6 +184,11 @@ button, input, textarea, select { font-family: var(--font-sans); }
 .mermaid, .kv-diagram-preview { max-width: 100%; }
 .mermaid svg, .kv-diagram-preview svg { max-width: 100% !important; height: auto !important; }
 
+/* 挿入ブロックは本文の余白を超えて表示されないようにする */
+[data-kv-block="calendar"] { max-width: 100%; box-sizing: border-box; }
+[data-kv-block="calendar"] table { max-width: 100%; }
+[data-kv-block="table"] table { max-width: 100%; }
+
 /* Reading view: hide the editor-only affordances baked into stored bodyHtml */
 .kv-readonly [data-kv-remove],
 .kv-readonly [data-kv-add-row],
@@ -196,10 +201,10 @@ button, input, textarea, select { font-family: var(--font-sans); }
 .kv-color-swatch:hover { transform: scale(1.1); }
 
 .kv-modal-card {
-  display: flex; align-items: center; gap: 0.7rem; padding: 0.8rem 0.9rem;
+  display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.8rem 0.9rem;
   border: 1.5px solid var(--border); border-radius: 12px; cursor: pointer;
   background: var(--surface); text-align: left; font-family: var(--font-sans);
   transition: all var(--dur-fast) var(--ease);
 }
 .kv-modal-card:hover { border-color: var(--primary); background: var(--note-bg); }
-.kv-modal-card i { font-size: 1.15rem; flex-shrink: 0; width: 22px; text-align: center; }
+.kv-modal-card i { font-size: 1.15rem; flex-shrink: 0; width: 22px; text-align: center; margin-top: 1px; }

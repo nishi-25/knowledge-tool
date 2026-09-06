@@ -59,9 +59,10 @@ export default function InsertModal({ open, onClose, categories }) {
             {visibleItems.map((it) => (
               <button key={it.key} onClick={() => { it.run(); close(); }} className="kv-modal-card">
                 <i className={it.icon} style={{ color: it.color || 'var(--primary-dark)' }} />
-                <div>
+                <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-strong)' }}>{it.label}</div>
-                  {q && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{it.catLabel}</div>}
+                  {q && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 1 }}>{it.catLabel}</div>}
+                  {it.description && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.4 }}>{it.description}</div>}
                 </div>
               </button>
             ))}

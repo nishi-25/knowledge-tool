@@ -3,10 +3,10 @@ export const NO_FOLDER_META = { id: null, label: 'フォルダなし', icon: 'bi
 
 export function calloutMeta(variant) {
   const M = {
-    info: { label: '情報', icon: 'bi bi-info-circle-fill', color: '#0284c7', bg: '#e0f2fe', border: '#bae6fd' },
-    caution: { label: '注意', icon: 'bi bi-exclamation-circle-fill', color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
-    warning: { label: '警告', icon: 'bi bi-exclamation-triangle-fill', color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
-    tip: { label: 'ヒント', icon: 'bi bi-lightbulb-fill', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+    info: { label: '情報', icon: 'bi bi-info-circle-fill', color: '#0284c7', bg: '#e0f2fe', border: '#bae6fd', description: '補足情報を伝えたいときの青い吹き出し' },
+    caution: { label: '注意', icon: 'bi bi-exclamation-circle-fill', color: '#b45309', bg: '#fffbeb', border: '#fde68a', description: '気をつけてほしい点を伝える黄色い吹き出し' },
+    warning: { label: '警告', icon: 'bi bi-exclamation-triangle-fill', color: '#dc2626', bg: '#fef2f2', border: '#fecaca', description: '重大なリスクを強調する赤い吹き出し' },
+    tip: { label: 'ヒント', icon: 'bi bi-lightbulb-fill', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0', description: 'おすすめの使い方を伝える緑の吹き出し' },
   };
   return M[variant] || M.info;
 }

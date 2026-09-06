@@ -74,6 +74,20 @@ function diagramHtml(source) {
   );
 }
 
+function hrHtml() {
+  return `<hr style="border:none;border-top:1px solid var(--border);margin:1.4rem 0;" /><p><br></p>`;
+}
+
+function sectionDividerHtml() {
+  return (
+    `<div data-kv-block="section-divider" style="display:flex;align-items:center;gap:0.8rem;margin:1.8rem 0 1rem;">` +
+    `<span contenteditable="true" style="font-size:0.78rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;">セクション</span>` +
+    `<span contenteditable="false" style="flex:1;height:1px;background:var(--border);"></span>` +
+    `<span data-kv-remove contenteditable="false" title="削除" style="cursor:pointer;color:var(--text-muted);font-size:0.8rem;flex-shrink:0;"><i class="bi bi-x-lg"></i></span>` +
+    `</div><p><br></p>`
+  );
+}
+
 export default function Editor({ initialDraft, initialTags, folders, allTags, onCancel, onSave }) {
   const bodyEditRef = useRef(null);
   const savedRangeRef = useRef(null);
@@ -289,30 +303,32 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
   const insertCategories = [
     {
       key: 'expression', label: '表現', icon: 'bi bi-chat-square-text',
-      items: calloutVariants().map((v) => ({ key: v.variant, icon: v.icon, color: v.color, label: v.label, run: () => insertHtmlAtCursor(calloutHtml(v.variant)) })),
+      items: calloutVariants().map((v) => ({ key: v.variant, icon: v.icon, color: v.color, label: v.label, description: v.description, run: () => insertHtmlAtCursor(calloutHtml(v.variant)) })),
     },
     {
       key: 'insert', label: '挿入', icon: 'bi bi-plus-square',
       items: [
-        { key: 'table', icon: 'bi bi-table', label: '表', run: () => insertHtmlAtCursor(tableHtml()) },
-        { key: 'diagram', icon: 'bi bi-diagram-2', label: '図（フローチャート/UML/ER/ガント）', run: () => openDiagramModal(null) },
-        { key: 'image', icon: 'bi bi-image', label: '画像', run: () => triggerImageUpload() },
-        { key: 'calendar', icon: 'bi bi-calendar3', label: 'カレンダー', run: () => setCalendarModalOpen(true) },
+        { key: 'table', icon: 'bi bi-table', label: '表', description: '行・列を後から追加できる表を挿入します', run: () => insertHtmlAtCursor(tableHtml()) },
+        { key: 'diagram', icon: 'bi bi-diagram-2', label: '図（フローチャート/UML/ER/ガント）', description: 'コードでも図でも編集できるMermaid図解を挿入します', run: () => openDiagramModal(null) },
+        { key: 'image', icon: 'bi bi-image', label: '画像', description: '画像ファイルをアップロードして挿入します', run: () => triggerImageUpload() },
+        { key: 'calendar', icon: 'bi bi-calendar3', label: 'カレンダー', description: '月表示のカレンダーを挿入します', run: () => setCalendarModalOpen(true) },
+        { key: 'hr', icon: 'bi bi-hr', label: '水平ルーラー', description: '本文を区切る横線を挿入します', run: () => insertHtmlAtCursor(hrHtml()) },
+        { key: 'section-divider', icon: 'bi bi-layout-text-sidebar-reverse', label: 'セクション区切り', description: 'ラベル付きの区切り線で本文をセクションに分けます', run: () => insertHtmlAtCursor(sectionDividerHtml()) },
       ],
     },
     {
       key: 'embed', label: '埋め込み', icon: 'bi bi-code-square',
       items: [
-        { key: 'markdown', icon: 'bi bi-markdown', label: 'Markdown', run: () => setMarkdownModalOpen(true) },
-        { key: 'html', icon: 'bi bi-filetype-html', label: 'HTML', run: () => setHtmlModalOpen(true) },
-        { key: 'video', icon: 'bi bi-camera-video', label: '動画', run: () => setVideoModalOpen(true) },
+        { key: 'markdown', icon: 'bi bi-markdown', label: 'Markdown', description: 'Markdown記法で書いた内容をHTMLに変換して挿入します', run: () => setMarkdownModalOpen(true) },
+        { key: 'html', icon: 'bi bi-filetype-html', label: 'HTML', description: 'HTMLコードをそのまま挿入します', run: () => setHtmlModalOpen(true) },
+        { key: 'video', icon: 'bi bi-camera-video', label: '動画', description: 'YouTube・Vimeoのリンクやファイルから動画を埋め込みます', run: () => setVideoModalOpen(true) },
       ],
     },
     {
       key: 'tools', label: 'ツール', icon: 'bi bi-tools',
       items: [
-        { key: 'ocr', icon: 'bi bi-camera', label: 'メモをOCRで読み込む', run: () => runOcr() },
-        { key: 'keyword', icon: 'bi bi-stars', label: 'キーワードから整理', run: () => setKeywordMenuOpen(true) },
+        { key: 'ocr', icon: 'bi bi-camera', label: 'メモをOCRで読み込む', description: '手書きメモなどの画像から文字を読み取ります', run: () => runOcr() },
+        { key: 'keyword', icon: 'bi bi-stars', label: 'キーワードから整理', description: '入力したキーワードから見出しやタグの案を提案します', run: () => setKeywordMenuOpen(true) },
       ],
     },
   ];
@@ -328,7 +344,7 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '1.6rem 3rem 2.4rem', display: 'flex' }}>
-        <div style={{ maxWidth: 940, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
           <input
             value={draft.title}
             onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
