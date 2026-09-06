@@ -14,8 +14,18 @@ _attempts: dict[str, list[float]] = defaultdict(list)
 _lock = Lock()
 
 
+def _client_ip(request: Request) -> str:
+    # nginxリバースプロキシ経由の場合、request.client.hostはnginx自身のIPになってしまい、
+    # 全ユーザーが同じバケットを共有して誤ってブロックし合う。X-Real-IP/X-Forwarded-Forを
+    # 優先的に見て、実際のクライアントIPで制限する。
+    forwarded = request.headers.get("x-real-ip") or request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
 def enforce_rate_limit(request: Request, key: str, max_attempts: int = 10, window_seconds: int = 60) -> None:
-    ip = request.client.host if request.client else "unknown"
+    ip = _client_ip(request)
     bucket_key = f"{key}:{ip}"
     now = time.monotonic()
     with _lock:
