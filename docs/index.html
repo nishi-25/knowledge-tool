@@ -1,0 +1,187 @@
+<title>Knowledge View</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="チームのナレッジを1画面で作成・整理・共有できるセルフホスト型ナレッジ管理ツール。Web版・デスクトップ版どちらでも利用できます。">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><text y=%2213%22 font-size=%2214%22>📘</text></svg>">
+
+<header class="site">
+  <div class="container nav">
+    <div class="logo">K</div>
+    <div class="brand">Knowledge<span> View.</span></div>
+    <nav class="links">
+      <a href="#features">特長</a>
+      <a href="#web">Web版</a>
+      <a href="#desktop">デスクトップ版</a>
+      <a href="#changelog">更新履歴</a>
+      <a href="https://github.com/nishi-25/knowledge-tool" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container">
+    <h1>チームのナレッジを、<br>1画面でまとめて育てる。</h1>
+    <p class="lead">図解もテーブルも動画も。作成・検索・整理がひとつの画面で完結するセルフホスト型のナレッジ管理ツールです。Web版でもデスクトップ版でも、同じ使い心地で使えます。</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="#desktop">デスクトップ版をダウンロード</a>
+      <a class="btn btn-outline" href="#web">Web版として立ち上げる</a>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="container">
+    <h2>特長</h2>
+    <p class="section-lead">個人のメモから、チームで運用するナレッジベースまで。</p>
+    <div class="features">
+      <div class="feature-card">
+        <div class="icon">📝</div>
+        <h3>リッチな本文エディタ</h3>
+        <p>見出し・テーブル・注意書き・画像・動画に加え、フローチャートやシーケンス図などのMermaid図解を本文中に直接挿入できます。</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">👥</div>
+        <h3>チームでの権限管理</h3>
+        <p>招待URLを発行してメンバーの参加を承認制に。プロジェクトは複数人のオーナーで共同管理でき、権限を柔軟に割り振れます。</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🗂️</div>
+        <h3>複数プロジェクトを分離管理</h3>
+        <p>プロジェクト（ワークスペース）ごとに記事・フォルダ・タグが完全に分離。目的別にいくつでも作成・切り替えできます。</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">☁️</div>
+        <h3>保存先を選べる</h3>
+        <p>ローカルストレージのほか、AWS S3 / Google ドライブ / SharePoint Online / Box にも対応。プロジェクトごとに保存先を選択できます。</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🛡️</div>
+        <h3>管理者パネル</h3>
+        <p>サーバー版では、初回起動時に決めた管理者アカウントからすべてのプロジェクト・ユーザーを横断的に管理できます。</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">💻</div>
+        <h3>ログイン不要のデスクトップ版</h3>
+        <p>Windows / Mac / Linuxのネイティブアプリとして単体で動作。ログイン不要ですぐに使い始められ、必要な時だけチームのサーバーに接続できます。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="web">
+  <div class="container">
+    <h2>Web版として立ち上げる</h2>
+    <p class="section-lead">チームで共有するサーバーとして運用する場合はこちら。Dockerを使う方法と、使わない方法の2通りをご案内します。</p>
+
+    <div class="tab-card">
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="docker">Dockerで起動</button>
+        <button class="tab-btn" data-tab="plain">Dockerを使わない場合</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-docker">
+        <p>もっとも簡単な方法です。Docker / Docker Composeがインストールされていれば、コマンド一つで起動できます。</p>
+        <h4>1. リポジトリを取得</h4>
+        <pre class="code">git clone https://github.com/nishi-25/knowledge-tool.git
+cd knowledge-tool</pre>
+        <h4>2. 起動</h4>
+        <pre class="code">docker compose up --build</pre>
+        <h4>3. アクセス</h4>
+        <p>ブラウザで <code>http://localhost:8080</code> を開きます。初回アクセス時にアカウント作成、続けてプロジェクト作成のセットアップ画面が表示されます。</p>
+      </div>
+
+      <div class="tab-panel" id="tab-plain">
+        <p>Dockerを使わず、バックエンド（Python）とフロントエンド（Node.js）を直接起動する方法です。</p>
+        <h4>1. バックエンドを起動</h4>
+        <pre class="code">cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000</pre>
+        <h4>2. フロントエンドをビルドして配信</h4>
+        <pre class="code">cd frontend
+npm install
+npm run build
+npx serve -s dist -l 8080</pre>
+        <p>フロントエンドを配信するサーバー側で、<code>/api</code> 宛のリクエストをバックエンド（<code>http://localhost:8000</code>）へリバースプロキシするよう設定してください（<code>frontend/nginx.conf</code> が設定例です）。</p>
+        <h4>3. アクセス</h4>
+        <p>ブラウザで <code>http://localhost:8080</code> を開きます。</p>
+      </div>
+    </div>
+
+    <div class="note-box">
+      サーバー版では、初めて管理者パネル（<code>/admin</code>）を開いた人が管理者のユーザー名・パスワードを設定します。以降はそのアカウントですべてのプロジェクトを横断的に管理できます。
+    </div>
+  </div>
+</section>
+
+<section id="desktop">
+  <div class="container">
+    <h2>デスクトップ版をダウンロード</h2>
+    <p class="section-lead">インストール不要ですぐに使えるネイティブアプリです。ログイン不要のローカル動作に加え、設定画面からチームのサーバーへ接続することもできます。</p>
+
+    <div class="downloads">
+      <div class="download-card">
+        <div class="icon">🪟</div>
+        <h3>Windows</h3>
+        <p>Windows 10 / 11 対応</p>
+        <a class="btn btn-primary" href="https://github.com/nishi-25/knowledge-tool/releases/latest/download/KnowledgeView-Setup.exe">ダウンロード (.exe)</a>
+      </div>
+      <div class="download-card">
+        <div class="icon">🍎</div>
+        <h3>Mac</h3>
+        <p>macOS 11 以降対応</p>
+        <a class="btn btn-primary" href="https://github.com/nishi-25/knowledge-tool/releases/latest/download/KnowledgeView.dmg">ダウンロード (.dmg)</a>
+      </div>
+      <div class="download-card">
+        <div class="icon">🐧</div>
+        <h3>Linux</h3>
+        <p>AppImage / .deb</p>
+        <a class="btn btn-primary" href="https://github.com/nishi-25/knowledge-tool/releases/latest/download/KnowledgeView.AppImage">ダウンロード (.AppImage)</a>
+        <div style="margin-top:0.5rem;"><a href="https://github.com/nishi-25/knowledge-tool/releases/latest/download/KnowledgeView.deb" style="font-size:0.8rem;font-weight:600;">.deb をダウンロード</a></div>
+      </div>
+    </div>
+
+    <div class="note-box">
+      現時点ではコード署名を行っていないため、初回起動時にOSから警告が表示されます。<br>
+      <strong>Windows:</strong> 「WindowsによってPCが保護されました」→「詳細情報」→「実行」の順に進んでください。<br>
+      <strong>Mac:</strong> 通常のダブルクリックで開けない場合、Finderでアプリを右クリック（またはControl+クリック）→「開く」を選択してください。
+    </div>
+  </div>
+</section>
+
+<section id="changelog">
+  <div class="container">
+    <h2>更新履歴</h2>
+    <p class="section-lead">詳細な変更点は <a href="https://github.com/nishi-25/knowledge-tool/releases" target="_blank" rel="noopener">GitHub Releases</a> でも確認できます。</p>
+    <div class="changelog">
+      <div class="changelog-entry">
+        <div class="version-row"><span class="version">v1.0.0</span></div>
+        <ul>
+          <li>初回リリース。記事の作成・検索・整理をワンビューで行えるナレッジ管理アプリ。</li>
+          <li>見出し・テーブル・注意書き・画像・動画・Mermaid図解（フローチャート／シーケンス図／状態遷移図／ER図など）に対応したリッチな本文エディタ。</li>
+          <li>複数プロジェクト管理、ログイン・チーム招待・承認制のアクセス権管理、複数オーナーによる共同管理に対応。</li>
+          <li>ローカルストレージに加え、AWS S3 / Google ドライブ / SharePoint Online / Box を保存先として選択可能。</li>
+          <li>サーバー版向けの管理者パネル（初回起動時にアカウントを設定、全プロジェクト横断管理、ログイン機能の有効/無効切り替え）。</li>
+          <li>Windows / Mac / Linux向けデスクトップアプリ（ログイン不要のローカル動作、任意でサーバーに接続可能）。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p><a href="https://github.com/nishi-25/knowledge-tool" target="_blank" rel="noopener">GitHub リポジトリ</a> ・ Knowledge View</p>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+</script>

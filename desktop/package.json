@@ -1,0 +1,50 @@
+{
+  "name": "knowledge-view-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Knowledge View デスクトップ版",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^32.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.knowledgeview.app",
+    "productName": "KnowledgeView",
+    "asar": true,
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "extraResources": [
+      { "from": "../frontend/dist", "to": "frontend" }
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "KnowledgeView-Setup.exe",
+      "extraResources": [
+        { "from": "dist/knowledge-view-backend.exe", "to": "backend/knowledge-view-backend.exe" }
+      ]
+    },
+    "mac": {
+      "target": "dmg",
+      "artifactName": "KnowledgeView.dmg",
+      "extraResources": [
+        { "from": "dist/knowledge-view-backend", "to": "backend/knowledge-view-backend" }
+      ]
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "artifactName": "KnowledgeView.${ext}",
+      "category": "Office",
+      "extraResources": [
+        { "from": "dist/knowledge-view-backend", "to": "backend/knowledge-view-backend" }
+      ]
+    }
+  }
+}

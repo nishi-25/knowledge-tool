@@ -1,0 +1,17 @@
+services:
+  backend:
+    build: ./backend
+    volumes:
+      - ${KV_DATA_PATH:-./backend/data}:/data/local
+      - ${KV_BROWSE_HOST_PATH:-/mnt}:/host_mnt
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
