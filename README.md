@@ -2,7 +2,8 @@
 
 チームのナレッジを1画面で作成・検索・整理できるセルフホスト型ナレッジ管理ツール。
 
-**製品紹介・デスクトップ版ダウンロード:** <https://nishi-25.github.io/knowledge-tool/>
+**製品紹介・デスクトップ版ダウンロード:** <https://nishi-25.github.io/knowledge-tool/>  
+**取り扱い説明書:** <https://nishi-25.github.io/knowledge-tool/manual.html>
 
 ## 構成
 
