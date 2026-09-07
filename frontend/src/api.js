@@ -42,6 +42,15 @@ function currentBase() {
   return (typeof window !== 'undefined' && window.__KV_API_BASE__) || '/api';
 }
 
+// 外部プログラムから叩く用の絶対URL。Web版の相対パス'/api'と違い、
+// 外部APIキーの使用例に載せるにはホスト名を含む完全なURLが必要。
+function publicApiBaseUrl() {
+  const base = currentBase();
+  if (/^https?:\/\//i.test(base)) return base;
+  if (typeof window !== 'undefined' && window.location) return `${window.location.origin}${base}`;
+  return base;
+}
+
 async function request(path, options = {}) {
   const useRemote = isRemoteActive();
   const isDesktopLocalBackend = typeof window !== 'undefined' && !!window.__KV_API_BASE__;
@@ -86,6 +95,7 @@ export const api = {
   getRemoteLink,
   getActiveSource,
   setActiveSource,
+  publicApiBaseUrl,
 
   ping: async (url) => {
     const normalized = normalizeServerUrl(url);
@@ -171,6 +181,10 @@ export const api = {
   updateArticle: (id, data) => request(`/articles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteArticle: (id) => request(`/articles/${id}`, { method: 'DELETE' }),
   toggleFavorite: (id) => request(`/articles/${id}/favorite`, { method: 'POST' }),
+
+  listApiKeys: () => request('/apikeys'),
+  createApiKey: (label) => request('/apikeys', { method: 'POST', body: JSON.stringify({ label }) }),
+  deleteApiKey: (id) => request(`/apikeys/${id}`, { method: 'DELETE' }),
 
   exportProject: () => request('/export/project'),
   exportArticle: (id) => request(`/export/articles/${id}`),

@@ -87,6 +87,34 @@ npm run dist
 
 `v*` タグをpushすると、GitHub Actions（`.github/workflows/release.yml`）がWindows/Mac/Linuxの3プラットフォームでビルドし、そのタグのGitHub Releaseにインストーラを自動添付します。
 
+## 外部API
+
+設定画面の「外部APIキー」からAPIキーを発行すると、外部プログラム（AIエージェント等）から記事・フォルダの取得・追加・削除ができます。サーバー版・デスクトップ版どちらでも利用できます。
+
+```bash
+# 記事一覧を取得
+curl -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/articles
+
+# 記事を作成
+curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" -H "Content-Type: application/json" \
+  https://your-server/api/v1/articles \
+  -d '{"title": "タイトル", "folder": null, "tags": ["タグ1"], "bodyHtml": "<p>本文</p>"}'
+```
+
+| メソッド | パス | 内容 |
+| --- | --- | --- |
+| GET | `/api/v1/articles` | 記事一覧を取得 |
+| GET | `/api/v1/articles/{id}` | 記事を1件取得 |
+| POST | `/api/v1/articles` | 記事を作成 |
+| PUT | `/api/v1/articles/{id}` | 記事を更新 |
+| DELETE | `/api/v1/articles/{id}` | 記事を削除 |
+| GET | `/api/v1/folders` | フォルダ一覧を取得 |
+| POST | `/api/v1/folders` | フォルダを作成 |
+| DELETE | `/api/v1/folders/{id}` | フォルダを削除 |
+| GET | `/api/v1/tags` | タグ一覧を取得 |
+
+APIキーは1つのプロジェクトに紐づき、そのプロジェクトの記事・フォルダのみ操作できます。
+
 ## バージョニング
 
 `VERSION` ファイルと `backend/app/config.py` の `APP_VERSION` を単一の情報源とする。リリース時は両方を更新し、`CHANGELOG.md` にエントリを追加してから `git tag v<version>` する。
