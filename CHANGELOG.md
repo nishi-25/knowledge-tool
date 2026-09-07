@@ -2,6 +2,12 @@
 
 このプロジェクトの変更履歴。[Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) の形式に準拠。
 
+## [1.5.4] - 2026-09-07
+
+### 修正
+
+- デスクトップ版（Windows）で、v1.5.3の修正後もなお発生していた起動失敗（`AttributeError: 'NoneType' object has no attribute 'isatty'` / `Unable to configure formatter 'default'`）を修正。Windows向けの非コンソール（windowed）ビルドでは `sys.stdout`/`sys.stderr` が存在せず `None` になるため、内部で使用しているuvicornのログ設定がその前提で失敗していた。起動時に標準出力・標準エラー出力を破棄用のダミーに差し替えることで回避。これに伴い、デスクトップ版でログイン画面が表示されてしまう問題も併せて解消。
+
 ## [1.5.3] - 2026-09-07
 
 ### 修正

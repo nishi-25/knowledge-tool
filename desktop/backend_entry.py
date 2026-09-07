@@ -5,6 +5,18 @@ PyInstallerでこのファイルを単一実行ファイルに固め、Electron�
 import os
 import sys
 
+# Windows向けにconsole=False（非コンソール/windowedサブシステム）でビルドすると、
+# アタッチ先のコンソールが存在しないため sys.stdout/sys.stderr が None になる。
+# uvicornのデフォルトログ設定は起動時に sys.stderr.isatty() を呼ぶため、None のままだと
+# "AttributeError: 'NoneType' object has no attribute 'isatty'" で起動に失敗する。
+# ログを破棄先（devnull）のファイルオブジェクトに差し替えて回避する。
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w")
+if sys.stdin is None:
+    sys.stdin = open(os.devnull, "r")
+
 # ローカル実行時（未フリーズ）に backend/app パッケージを解決できるようにする。
 # PyInstallerでフリーズする際は --paths ../backend を指定して同じ解決を行う。
 _BACKEND_DIR = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "backend"))
