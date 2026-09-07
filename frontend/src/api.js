@@ -45,17 +45,32 @@ async function request(path, options = {}) {
   return res.json();
 }
 
+function normalizeServerUrl(url) {
+  const trimmed = url.trim().replace(/\/$/, '');
+  // "localhost:8080" のようにスキームが省略された入力は、fetchが相対URLとして
+  // 解釈してしまい常に接続失敗になるため、http(s):// が無ければ補う。
+  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `http://${trimmed}`;
+  try {
+    // eslint-disable-next-line no-new
+    new URL(withScheme);
+  } catch {
+    throw new Error('サーバーURLの形式が正しくありません');
+  }
+  return withScheme;
+}
+
 export const api = {
   getRemoteLink,
 
   ping: async (url) => {
-    const res = await fetch(`${url.replace(/\/$/, '')}/api/ping`, { headers: { 'Content-Type': 'application/json' } });
+    const normalized = normalizeServerUrl(url);
+    const res = await fetch(`${normalized}/api/ping`, { headers: { 'Content-Type': 'application/json' } });
     if (!res.ok) throw new Error(`接続に失敗しました (HTTP ${res.status})`);
     return res.json();
   },
 
   linkToServer: async (url, email, password) => {
-    const normalized = url.replace(/\/$/, '');
+    const normalized = normalizeServerUrl(url);
     const res = await fetch(`${normalized}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
