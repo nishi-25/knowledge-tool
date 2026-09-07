@@ -107,7 +107,18 @@ export default function StorageConfigForm({
     }
   };
 
+  const isDesktop = systemInfo?.mode === 'desktop';
   const hostLabel = systemInfo?.hostOsGuess === 'windows' ? 'WSL2 (Windows) 上のDockerコンテナ' : systemInfo?.isContainer ? 'Linuxコンテナ' : '不明な環境';
+
+  const pickFolder = async () => {
+    if (!window.__KV_PICK_FOLDER__) return;
+    const path = await window.__KV_PICK_FOLDER__();
+    if (path) {
+      setDataRootMode('browse');
+      setDataPath(path);
+      invalidateTest();
+    }
+  };
 
   return (
     <div>
@@ -135,7 +146,9 @@ export default function StorageConfigForm({
       <div style={{ background: 'var(--slate-50)', border: '1px solid var(--border)', borderRadius: 10, padding: '1rem', marginBottom: '1rem' }}>
         {provider === 'local' && (
           <>
-            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>検出環境: {hostLabel}</div>
+            {!isDesktop && (
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>検出環境: {hostLabel}</div>
+            )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <div
                 onClick={() => { setDataRootMode('local'); setDataPath(null); invalidateTest(); }}
@@ -146,17 +159,17 @@ export default function StorageConfigForm({
                 <div style={{ flex: 1, fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-strong)' }}>ローカル（アプリ標準フォルダ）</div>
                 <i className={dataRootMode === 'local' ? 'bi bi-check-circle-fill' : 'bi bi-circle'} style={{ color: dataRootMode === 'local' ? 'var(--primary)' : 'var(--border-strong)', fontSize: '0.95rem' }} />
               </div>
-              {systemInfo?.browseAvailable && (
+              {(systemInfo?.browseAvailable || isDesktop) && (
                 <div
-                  onClick={() => setBrowserOpen(true)}
+                  onClick={() => (isDesktop ? pickFolder() : setBrowserOpen(true))}
                   className={`kv-storage-opt${dataRootMode === 'browse' ? ' on' : ''}`}
                   style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.55rem 0.7rem', borderRadius: 10, cursor: 'pointer', background: 'var(--surface)' }}
                 >
                   <i className="bi bi-hdd-network-fill" style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-strong)' }}>フォルダを参照...</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-strong)' }}>フォルダを選択...</div>
                     <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {dataRootMode === 'browse' && dataPath ? dataPath : 'Windowsのドライブなどから選択'}
+                      {dataRootMode === 'browse' && dataPath ? dataPath : (isDesktop ? 'クリックしてPC内のフォルダを選択' : 'Windowsのドライブなどから選択')}
                     </div>
                   </div>
                   <i className={dataRootMode === 'browse' ? 'bi bi-check-circle-fill' : 'bi bi-circle'} style={{ color: dataRootMode === 'browse' ? 'var(--primary)' : 'var(--border-strong)', fontSize: '0.95rem' }} />

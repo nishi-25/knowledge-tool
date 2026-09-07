@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, protocol, net } = require('electron');
+const { app, BrowserWindow, dialog, protocol, net, ipcMain } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const http = require('http');
@@ -165,6 +165,15 @@ async function createWindow() {
   });
   win.loadURL(`${FRONTEND_SCHEME}://app/index.html`);
 }
+
+ipcMain.handle('kv:pick-folder', async () => {
+  const win = BrowserWindow.getFocusedWindow();
+  const result = await dialog.showOpenDialog(win, {
+    properties: ['openDirectory', 'createDirectory'],
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
+});
 
 app.whenReady().then(() => {
   registerFrontendProtocol();
