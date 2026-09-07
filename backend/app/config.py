@@ -7,7 +7,7 @@ _BACKEND_DIR = Path(__file__).resolve().parent.parent
 APP_MODE = os.environ.get("KV_MODE", "server")
 
 # アプリのバージョン。リリース時はリポジトリルートの VERSION ファイルと合わせて更新する。
-APP_VERSION = "1.5.0"
+APP_VERSION = "1.5.1"
 
 # 常に使える既定のローカル保存先。
 LOCAL_ROOT = Path(os.environ.get("KV_DATA_DIR_LOCAL", str(_BACKEND_DIR / "data")))
