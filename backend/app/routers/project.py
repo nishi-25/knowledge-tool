@@ -15,6 +15,7 @@ from ..store import (
     slugify,
 )
 from ..auth import get_current_user, users_store, public_user
+from ..email_utils import try_send_notification
 from ..membership import get_member, resolve_current_project, require_owner, is_owner, owner_count
 
 router = APIRouter(prefix="/api/projects", tags=["project"])
@@ -256,6 +257,13 @@ def approve_request(user_id: str, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="申請が見つかりません")
     member["status"] = "approved"
     projects_index_store.write(project["id"], project)
+    approved_user = users_store.read(user_id)
+    if approved_user:
+        try_send_notification(
+            approved_user["email"],
+            f'【Knowledge View】「{project["name"]}」への参加が承認されました',
+            f'{approved_user["displayName"]} 様\n\n「{project["name"]}」への参加申請が承認されました。\nアプリからログインしてご利用ください。',
+        )
     return {"ok": True}
 
 

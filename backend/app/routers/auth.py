@@ -13,7 +13,7 @@ from ..auth import (
     public_user,
     SESSION_COOKIE_NAME,
 )
-from ..schemas import SignupIn, LoginIn
+from ..schemas import SignupIn, LoginIn, SetNewPasswordIn
 from ..admin_store import is_login_enabled
 from ..rate_limit import enforce_rate_limit
 
@@ -92,3 +92,13 @@ def logout(response: Response):
 @router.get("/me")
 def me(user: dict = Depends(get_current_user)):
     return public_user(user)
+
+
+@router.post("/set-new-password")
+def set_new_password(payload: SetNewPasswordIn, user: dict = Depends(get_current_user)):
+    if len(payload.newPassword) < 6:
+        raise HTTPException(status_code=400, detail="パスワードは6文字以上にしてください")
+    user["passwordHash"] = hash_password(payload.newPassword)
+    user["mustChangePassword"] = False
+    users_store.write(user["id"], user)
+    return {"ok": True}

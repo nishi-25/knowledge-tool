@@ -67,6 +67,10 @@ export const api = {
   login: (email, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   logout: () => request('/auth/logout', { method: 'POST' }),
   me: () => request('/auth/me'),
+  setNewPassword: (newPassword) => request('/auth/set-new-password', { method: 'POST', body: JSON.stringify({ newPassword }) }),
+
+  forgotPassword: (email) => request('/support/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+  forgotUsername: (note) => request('/support/forgot-username', { method: 'POST', body: JSON.stringify({ note }) }),
 
   listProjects: () => request('/projects'),
   listDiscoverableProjects: () => request('/projects/discoverable'),
@@ -126,6 +130,8 @@ export const api = {
   adminListUsers: () => request('/admin/users'),
   adminCreateUser: (email, displayName, password) => request('/admin/users', { method: 'POST', body: JSON.stringify({ email, displayName, password }) }),
   adminDeleteUser: (userId) => request(`/admin/users/${userId}`, { method: 'DELETE' }),
+  adminBulkDeleteUsers: (ids) => request('/admin/users/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
+  adminSendEmailToUsers: (userIds, subject, body) => request('/admin/users/send-email', { method: 'POST', body: JSON.stringify({ userIds, subject, body }) }),
   adminImportUsersUrl: () => `${currentBase()}/admin/users/import`,
   adminExportUsersUrl: () => `${currentBase()}/admin/users/export`,
   adminImportTemplateUrl: () => `${currentBase()}/admin/users/import-template`,
@@ -147,6 +153,15 @@ export const api = {
   adminGetProject: (id) => request(`/admin/projects/${id}`),
   adminRenameProject: (id, name) => request(`/admin/projects/${id}`, { method: 'PUT', body: JSON.stringify({ name }) }),
   adminDeleteProject: (id) => request(`/admin/projects/${id}`, { method: 'DELETE' }),
+  adminBulkDeleteProjects: (ids) => request('/admin/projects/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
+
+  adminListSupportRequests: () => request('/admin/support-requests'),
+  adminResolveSupportRequest: (id) => request(`/admin/support-requests/${id}/resolve`, { method: 'POST' }),
+  adminIssueTempPassword: (id) => request(`/admin/support-requests/${id}/issue-temp-password`, { method: 'POST' }),
+
+  adminGetEmailSettings: () => request('/admin/email-settings'),
+  adminUpdateEmailSettings: (settings) => request('/admin/email-settings', { method: 'PUT', body: JSON.stringify(settings) }),
+  adminTestEmail: (toEmail) => request('/admin/email-settings/test', { method: 'POST', body: JSON.stringify({ toEmail }) }),
   adminApproveMember: (pid, uid) => request(`/admin/projects/${pid}/members/${uid}/approve`, { method: 'POST' }),
   adminRejectMember: (pid, uid) => request(`/admin/projects/${pid}/members/${uid}/reject`, { method: 'POST' }),
   adminRemoveMember: (pid, uid) => request(`/admin/projects/${pid}/members/${uid}/remove`, { method: 'POST' }),

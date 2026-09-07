@@ -4,6 +4,7 @@ from .config import LOCAL_ROOT
 from .storage.local_file import LocalFileStorage
 
 _admin_store = LocalFileStorage(LOCAL_ROOT / "admin")
+support_requests_store = LocalFileStorage(LOCAL_ROOT / "support_requests")
 
 ADMIN_SENTINEL_ID = "__admin__"
 ADMIN_SESSION_COOKIE = "kv_admin_session"

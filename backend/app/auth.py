@@ -143,4 +143,9 @@ def get_current_user_optional(
 
 
 def public_user(user: dict) -> dict:
-    return {"id": user["id"], "email": user["email"], "displayName": user["displayName"]}
+    return {
+        "id": user["id"],
+        "email": user["email"],
+        "displayName": user["displayName"],
+        "mustChangePassword": bool(user.get("mustChangePassword")),
+    }

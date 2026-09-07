@@ -9,6 +9,7 @@ import Organize from './components/Organize.jsx';
 import Settings from './components/Settings.jsx';
 import Editor from './components/Editor.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
+import ForcedPasswordChangeModal from './components/ForcedPasswordChangeModal.jsx';
 import InviteScreen from './components/InviteScreen.jsx';
 import AdminApp from './components/AdminApp.jsx';
 import TemplatePickerModal from './components/TemplatePickerModal.jsx';
@@ -261,6 +262,10 @@ export default function App() {
 
   if (!currentUser) {
     return <LoginScreen onAuthenticated={setCurrentUser} loginEnabled={systemInfo?.loginEnabled !== false} />;
+  }
+
+  if (currentUser.mustChangePassword) {
+    return <ForcedPasswordChangeModal onDone={() => setCurrentUser({ ...currentUser, mustChangePassword: false })} />;
   }
 
   if (inviteToken) {

@@ -1,6 +1,7 @@
 import csv
 import hmac
 import io
+import secrets
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -12,18 +13,25 @@ from ..admin_store import (
     ADMIN_SESSION_COOKIE,
     get_admin_config,
     save_admin_config,
+    support_requests_store,
 )
 from ..auth import create_session_token, find_user_by_email, hash_password, users_store, verify_password, verify_session_token
 from ..config import APP_MODE
+from ..email_settings import get_email_config, save_email_config
+from ..email_utils import EmailDisabledError, EmailNotConfiguredError, send_email, send_test_email, try_send_notification
 from ..membership import get_member, owner_count
 from ..rate_limit import enforce_rate_limit
 from ..schemas import (
+    AdminBulkIdsIn,
     AdminChangePasswordIn,
     AdminCreateUserIn,
+    AdminEmailSettingsIn,
+    AdminEmailTestIn,
     AdminLoginIn,
     AdminLoginSettingsIn,
     AdminMoveArticleIn,
     AdminProjectUpdateIn,
+    AdminSendEmailIn,
     AdminSetupIn,
 )
 from ..store import get_articles_store, get_comments_store, get_folders_store, get_tags_store, projects_index_store
@@ -193,10 +201,9 @@ def create_user(payload: AdminCreateUserIn, _: None = Depends(get_current_admin)
     return _public_user(user)
 
 
-@router.delete("/users/{user_id}")
-def delete_user(user_id: str, _: None = Depends(get_current_admin)):
+def _delete_user_record(user_id: str) -> bool:
     if users_store.read(user_id) is None:
-        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+        return False
     users_store.delete(user_id)
     # 各プロジェクトのメンバー一覧からも削除し、参照切れを残さない
     for project in projects_index_store.list():
@@ -204,7 +211,20 @@ def delete_user(user_id: str, _: None = Depends(get_current_admin)):
         if any(m["userId"] == user_id for m in members):
             project["members"] = [m for m in members if m["userId"] != user_id]
             projects_index_store.write(project["id"], project)
+    return True
+
+
+@router.delete("/users/{user_id}")
+def delete_user(user_id: str, _: None = Depends(get_current_admin)):
+    if not _delete_user_record(user_id):
+        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
     return {"ok": True}
+
+
+@router.post("/users/bulk-delete")
+def bulk_delete_users(payload: AdminBulkIdsIn, _: None = Depends(get_current_admin)):
+    deleted_count = sum(1 for uid in payload.ids if _delete_user_record(uid))
+    return {"deletedCount": deleted_count}
 
 
 @router.get("/users/import-template")
@@ -321,9 +341,9 @@ def rename_project(project_id: str, payload: AdminProjectUpdateIn, _: None = Dep
     return {"ok": True}
 
 
-@router.delete("/projects/{project_id}")
-def delete_project(project_id: str, _: None = Depends(get_current_admin)):
-    project = _require_project(project_id)
+def _delete_project_record(project_id: str) -> bool:
+    if projects_index_store.read(project_id) is None:
+        return False
     for store in (
         get_articles_store(project_id),
         get_folders_store(project_id),
@@ -333,7 +353,20 @@ def delete_project(project_id: str, _: None = Depends(get_current_admin)):
         for item in store.list():
             store.delete(str(item["id"]))
     projects_index_store.delete(project_id)
+    return True
+
+
+@router.delete("/projects/{project_id}")
+def delete_project(project_id: str, _: None = Depends(get_current_admin)):
+    if not _delete_project_record(project_id):
+        raise HTTPException(status_code=404, detail="プロジェクトが見つかりません")
     return {"ok": True}
+
+
+@router.post("/projects/bulk-delete")
+def bulk_delete_projects(payload: AdminBulkIdsIn, _: None = Depends(get_current_admin)):
+    deleted_count = sum(1 for pid in payload.ids if _delete_project_record(pid))
+    return {"deletedCount": deleted_count}
 
 
 @router.post("/projects/{project_id}/members/{user_id}/approve")
@@ -344,6 +377,13 @@ def admin_approve_member(project_id: str, user_id: str, _: None = Depends(get_cu
         raise HTTPException(status_code=404, detail="申請が見つかりません")
     member["status"] = "approved"
     projects_index_store.write(project_id, project)
+    approved_user = users_store.read(user_id)
+    if approved_user:
+        try_send_notification(
+            approved_user["email"],
+            f'【Knowledge View】「{project["name"]}」への参加が承認されました',
+            f'{approved_user["displayName"]} 様\n\n「{project["name"]}」への参加申請が承認されました。\nアプリからログインしてご利用ください。',
+        )
     return {"ok": True}
 
 
@@ -415,3 +455,107 @@ def admin_move_article(project_id: str, article_id: str, payload: AdminMoveArtic
     existing["folder"] = payload.folder or None
     articles_store.write(article_id, existing)
     return existing
+
+
+# --- パスワード／ユーザー名の問い合わせ対応 -----------------------------------
+
+@router.get("/support-requests")
+def list_support_requests(_: None = Depends(get_current_admin)):
+    reqs = support_requests_store.list()
+    reqs.sort(key=lambda r: r.get("createdAt", ""), reverse=True)
+    result = []
+    for r in reqs:
+        user = find_user_by_email(r["email"]) if r.get("email") else None
+        result.append({
+            **r,
+            "displayName": user["displayName"] if user else None,
+            "userExists": user is not None,
+        })
+    return result
+
+
+@router.post("/support-requests/{request_id}/resolve")
+def resolve_support_request(request_id: str, _: None = Depends(get_current_admin)):
+    req = support_requests_store.read(request_id)
+    if req is None:
+        raise HTTPException(status_code=404, detail="リクエストが見つかりません")
+    req["status"] = "resolved"
+    req["resolvedAt"] = datetime.now(timezone.utc).isoformat()
+    support_requests_store.write(request_id, req)
+    return {"ok": True}
+
+
+@router.post("/support-requests/{request_id}/issue-temp-password")
+def issue_temp_password(request_id: str, _: None = Depends(get_current_admin)):
+    req = support_requests_store.read(request_id)
+    if req is None:
+        raise HTTPException(status_code=404, detail="リクエストが見つかりません")
+    if req.get("type") != "password":
+        raise HTTPException(status_code=400, detail="このリクエストはパスワード再発行の対象ではありません")
+    user = find_user_by_email(req["email"])
+    if user is None:
+        raise HTTPException(status_code=404, detail="該当するユーザーが見つかりません")
+    temp_password = secrets.token_urlsafe(9)
+    user["passwordHash"] = hash_password(temp_password)
+    user["mustChangePassword"] = True
+    users_store.write(user["id"], user)
+    req["status"] = "resolved"
+    req["resolvedAt"] = datetime.now(timezone.utc).isoformat()
+    support_requests_store.write(request_id, req)
+    return {"ok": True, "tempPassword": temp_password, "email": user["email"]}
+
+
+# --- メール設定 --------------------------------------------------------------
+
+@router.get("/email-settings")
+def get_email_settings(_: None = Depends(get_current_admin)):
+    cfg = get_email_config()
+    return {**cfg, "smtpPassword": "********" if cfg.get("smtpPassword") else ""}
+
+
+@router.put("/email-settings")
+def update_email_settings(payload: AdminEmailSettingsIn, _: None = Depends(get_current_admin)):
+    cfg = get_email_config()
+    cfg["enabled"] = payload.enabled
+    cfg["smtpHost"] = payload.smtpHost.strip()
+    cfg["smtpPort"] = payload.smtpPort
+    cfg["smtpUsername"] = payload.smtpUsername.strip()
+    # マスク値がそのまま送り返された場合は、保存済みのパスワードを上書きしない
+    if payload.smtpPassword and payload.smtpPassword != "********":
+        cfg["smtpPassword"] = payload.smtpPassword
+    cfg["useTls"] = payload.useTls
+    cfg["fromAddress"] = payload.fromAddress.strip()
+    cfg["fromName"] = payload.fromName.strip()
+    save_email_config(cfg)
+    return {"ok": True}
+
+
+@router.post("/email-settings/test")
+def test_email_settings(payload: AdminEmailTestIn, _: None = Depends(get_current_admin)):
+    try:
+        send_test_email(payload.toEmail)
+    except EmailNotConfiguredError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"送信に失敗しました: {e}")
+    return {"ok": True}
+
+
+@router.post("/users/send-email")
+def send_email_to_users(payload: AdminSendEmailIn, _: None = Depends(get_current_admin)):
+    if not payload.subject.strip() or not payload.body.strip():
+        raise HTTPException(status_code=400, detail="件名と本文を入力してください")
+    sent = []
+    failed = []
+    for uid in payload.userIds:
+        user = users_store.read(uid)
+        if user is None:
+            continue
+        try:
+            send_email(user["email"], payload.subject, payload.body)
+            sent.append(user["email"])
+        except (EmailDisabledError, EmailNotConfiguredError) as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception:
+            failed.append(user["email"])
+    return {"sentCount": len(sent), "sent": sent, "failedCount": len(failed), "failed": failed}

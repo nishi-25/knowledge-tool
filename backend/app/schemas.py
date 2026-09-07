@@ -140,3 +140,40 @@ class AdminMoveArticleIn(BaseModel):
 
 class AdminProjectUpdateIn(BaseModel):
     name: str
+
+
+class AdminBulkIdsIn(BaseModel):
+    ids: list[str]
+
+
+class AdminEmailSettingsIn(BaseModel):
+    enabled: bool = False
+    smtpHost: str = ""
+    smtpPort: int = 587
+    smtpUsername: str = ""
+    smtpPassword: str = ""
+    useTls: bool = True
+    fromAddress: str = ""
+    fromName: str = ""
+
+
+class AdminEmailTestIn(BaseModel):
+    toEmail: str
+
+
+class AdminSendEmailIn(BaseModel):
+    userIds: list[str]
+    subject: str
+    body: str
+
+
+class ForgotPasswordIn(BaseModel):
+    email: str
+
+
+class ForgotUsernameIn(BaseModel):
+    note: str = ""
+
+
+class SetNewPasswordIn(BaseModel):
+    newPassword: str
