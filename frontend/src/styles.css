@@ -194,7 +194,12 @@ button, input, textarea, select { font-family: var(--font-sans); }
 .kv-readonly [data-kv-add-row],
 .kv-readonly [data-kv-add-col],
 .kv-readonly [data-kv-edit-diagram],
-.kv-readonly [data-kv-edit-drawio] { display: none !important; }
+.kv-readonly [data-kv-edit-drawio],
+.kv-readonly [data-kv-drag-handle] { display: none !important; }
+
+/* 挿入ブロックのドラッグ並び替え */
+[data-kv-drag-handle]:active { cursor: grabbing; }
+[data-kv-block].kv-dragging { opacity: 0.4; }
 
 /* カレンダーブロック: 日付セルのクリックで強調表示（編集画面のみ操作可能） */
 [data-kv-block="calendar"] td[data-kv-day]:hover { background: var(--slate-100); }

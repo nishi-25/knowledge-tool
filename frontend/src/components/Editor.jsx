@@ -34,10 +34,14 @@ const HEADING_OPTIONS = [
 const TABLE_HEADER_STYLE = 'text-align:left;padding:0.55rem 0.8rem;background:var(--slate-100);border:1px solid var(--border);font-weight:700;color:var(--text-strong);';
 const TABLE_BODY_STYLE = 'padding:0.55rem 0.8rem;border:1px solid var(--border);color:var(--text-body);';
 
+// ブロックをドラッグで並び替えるためのつまみ。挿入したブロックのアイコン行に共通で入れる。
+const DRAG_HANDLE = '<span data-kv-drag-handle contenteditable="false" title="ドラッグして移動" style="cursor:grab;color:var(--text-muted);font-size:0.8rem;flex-shrink:0;"><i class="bi bi-grip-vertical"></i></span>';
+
 function calloutHtml(variant) {
   const m = calloutMeta(variant);
   return (
-    `<div data-kv-block="callout" style="display:flex;gap:0.7rem;padding:0.9rem 1.1rem;border-radius:10px;background:${m.bg};border:1px solid ${m.border};margin:0.6rem 0;">` +
+    `<div data-kv-block="callout" draggable="true" style="display:flex;gap:0.7rem;padding:0.9rem 1.1rem;border-radius:10px;background:${m.bg};border:1px solid ${m.border};margin:0.6rem 0;">` +
+    `${DRAG_HANDLE}` +
     `<i class="${m.icon}" contenteditable="false" style="color:${m.color};font-size:1rem;margin-top:2px;"></i>` +
     `<div style="flex:1;">` +
     `<div contenteditable="false" style="font-size:0.78rem;font-weight:700;color:${m.color};margin-bottom:0.3rem;user-select:none;">${m.label}</div>` +
@@ -50,12 +54,13 @@ function calloutHtml(variant) {
 
 function tableHtml() {
   return (
-    `<div data-kv-block="table" contenteditable="false" style="margin:0.8rem 0;">` +
+    `<div data-kv-block="table" draggable="true" contenteditable="false" style="margin:0.8rem 0;">` +
     `<table style="width:100%;border-collapse:collapse;font-size:0.86rem;"><tbody>` +
     `<tr><th contenteditable="true" style="${TABLE_HEADER_STYLE}">見出し1</th><th contenteditable="true" style="${TABLE_HEADER_STYLE}">見出し2</th></tr>` +
     `<tr><td contenteditable="true" style="${TABLE_BODY_STYLE}"></td><td contenteditable="true" style="${TABLE_BODY_STYLE}"></td></tr>` +
     `</tbody></table>` +
     `<div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.4rem;">` +
+    `${DRAG_HANDLE}` +
     `<span data-kv-add-row contenteditable="false" style="font-size:0.72rem;color:var(--primary-dark);cursor:pointer;font-weight:600;">+ 行を追加</span>` +
     `<span data-kv-add-col contenteditable="false" style="font-size:0.72rem;color:var(--primary-dark);cursor:pointer;font-weight:600;">+ 列を追加</span>` +
     `<span data-kv-remove contenteditable="false" style="font-size:0.72rem;color:var(--text-muted);cursor:pointer;font-weight:600;margin-left:auto;"><i class="bi bi-x-lg"></i></span>` +
@@ -67,9 +72,10 @@ function diagramHtml(source) {
   const encoded = encodeMermaidSource(source);
   const escaped = source.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return (
-    `<div data-kv-block="diagram" data-kv-mermaid-src="${encoded}" contenteditable="false" style="margin:0.8rem 0; max-width:100%; box-sizing:border-box;">` +
+    `<div data-kv-block="diagram" data-kv-mermaid-src="${encoded}" draggable="true" contenteditable="false" style="margin:0.8rem 0; max-width:100%; box-sizing:border-box;">` +
     `<div class="mermaid" style="display:flex;justify-content:center;padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow-x:auto;max-width:100%;box-sizing:border-box;">${escaped}</div>` +
     `<div style="display:flex;align-items:center;gap:0.6rem;margin-top:0.4rem;">` +
+    `${DRAG_HANDLE}` +
     `<span data-kv-edit-diagram contenteditable="false" style="font-size:0.72rem;color:var(--primary-dark);cursor:pointer;font-weight:600;"><i class="bi bi-pencil" style="margin-right:3px;"></i>編集</span>` +
     `<span data-kv-remove contenteditable="false" style="font-size:0.72rem;color:var(--text-muted);cursor:pointer;font-weight:600;margin-left:auto;"><i class="bi bi-x-lg"></i></span>` +
     `</div></div><p><br></p>`
@@ -82,7 +88,8 @@ function hrHtml() {
 
 function sectionDividerHtml() {
   return (
-    `<div data-kv-block="section-divider" style="display:flex;align-items:center;gap:0.8rem;margin:1.8rem 0 1rem;">` +
+    `<div data-kv-block="section-divider" draggable="true" style="display:flex;align-items:center;gap:0.8rem;margin:1.8rem 0 1rem;">` +
+    `${DRAG_HANDLE}` +
     `<span contenteditable="true" style="font-size:0.78rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;">セクション</span>` +
     `<span contenteditable="false" style="flex:1;height:1px;background:var(--border);"></span>` +
     `<span data-kv-remove contenteditable="false" title="削除" style="cursor:pointer;color:var(--text-muted);font-size:0.8rem;flex-shrink:0;"><i class="bi bi-x-lg"></i></span>` +
@@ -96,9 +103,10 @@ function dateInlineHtml(label) {
 
 function drawioHtml(dataUrl) {
   return (
-    `<div data-kv-block="drawio" contenteditable="false" style="margin:0.8rem 0; max-width:100%; box-sizing:border-box;">` +
+    `<div data-kv-block="drawio" draggable="true" contenteditable="false" style="margin:0.8rem 0; max-width:100%; box-sizing:border-box;">` +
     `<img src="${dataUrl}" alt="図" style="max-width:100%; border:1px solid var(--border); border-radius:10px; display:block; margin:0 auto; background:#fff;" />` +
     `<div style="display:flex;align-items:center;gap:0.6rem;margin-top:0.4rem;">` +
+    `${DRAG_HANDLE}` +
     `<span data-kv-edit-drawio contenteditable="false" style="font-size:0.72rem;color:var(--primary-dark);cursor:pointer;font-weight:600;"><i class="bi bi-pencil" style="margin-right:3px;"></i>編集</span>` +
     `<span data-kv-remove contenteditable="false" style="font-size:0.72rem;color:var(--text-muted);cursor:pointer;font-weight:600;margin-left:auto;"><i class="bi bi-x-lg"></i></span>` +
     `</div></div><p><br></p>`
@@ -107,8 +115,9 @@ function drawioHtml(dataUrl) {
 
 function expandHtml() {
   return (
-    `<details data-kv-block="expand" style="border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;margin:0.8rem 0;background:var(--surface);">` +
+    `<details data-kv-block="expand" draggable="true" style="border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;margin:0.8rem 0;background:var(--surface);">` +
     `<summary style="cursor:pointer;font-weight:700;color:var(--text-strong);display:flex;align-items:center;gap:0.5rem;">` +
+    `${DRAG_HANDLE}` +
     `<i class="bi bi-chevron-right" contenteditable="false"></i>` +
     `<span style="flex:1;">クリックして展開</span>` +
     `<span data-kv-remove contenteditable="false" title="削除" style="cursor:pointer;color:var(--text-muted);font-size:0.8rem;flex-shrink:0;"><i class="bi bi-x-lg"></i></span>` +
@@ -122,6 +131,8 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
   const bodyEditRef = useRef(null);
   const savedRangeRef = useRef(null);
   const diagramEditTargetRef = useRef(null);
+  const draggedBlockRef = useRef(null);
+  const pendingDragBlockRef = useRef(null);
   const imageInputRef = useRef(null);
   const [draft, setDraft] = useState(initialDraft);
   const [draftTags, setDraftTags] = useState(initialTags);
@@ -276,6 +287,55 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
     if (dayCell && dayCell.closest('[data-kv-block="calendar"]')) {
       dayCell.classList.toggle('kv-day-selected');
     }
+  };
+
+  // 図やカレンダーなどの挿入ブロックは、専用のつまみ（data-kv-drag-handle）を掴んだときだけ
+  // ドラッグで並び替えられるようにする。本文の他の場所での通常のテキスト選択・画像ドラッグは
+  // ブラウザ標準の動作のままにしたいので、つまみ以外から始まったドラッグはこのハンドラでは
+  // 扱わず、そのままブラウザに任せる。
+  // 注意: どのブロックをつかんだかは必ずmousedown時点で確定させる。ネイティブのdragstart
+  // イベントのtargetは、指を動かした後の現在位置での要素になることがあり（ポインタが
+  // 一気に移動する場合など）、つかんだ瞬間の要素と一致するとは限らないため。
+  const handleBodyMouseDown = (e) => {
+    const handle = e.target.closest('[data-kv-drag-handle]');
+    pendingDragBlockRef.current = handle ? handle.closest('[data-kv-block]') : null;
+  };
+
+  const handleBodyDragStart = (e) => {
+    const block = pendingDragBlockRef.current;
+    pendingDragBlockRef.current = null;
+    if (!block) {
+      e.preventDefault();
+      return;
+    }
+    draggedBlockRef.current = block;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
+    block.classList.add('kv-dragging');
+  };
+
+  const handleBodyDragOver = (e) => {
+    if (!draggedBlockRef.current) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleBodyDrop = (e) => {
+    const dragged = draggedBlockRef.current;
+    if (!dragged) return;
+    e.preventDefault();
+    dragged.classList.remove('kv-dragging');
+    draggedBlockRef.current = null;
+    const target = e.target.closest('[data-kv-block]');
+    if (!target || target === dragged) return;
+    const rect = target.getBoundingClientRect();
+    const before = e.clientY < rect.top + rect.height / 2;
+    target.parentNode.insertBefore(dragged, before ? target : target.nextSibling);
+  };
+
+  const handleBodyDragEnd = () => {
+    draggedBlockRef.current?.classList.remove('kv-dragging');
+    draggedBlockRef.current = null;
   };
 
   const handleBodyPaste = (e) => {
@@ -534,6 +594,11 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
             ref={bodyEditRef}
             onClick={handleBodyClick}
             onPaste={handleBodyPaste}
+            onMouseDown={handleBodyMouseDown}
+            onDragStart={handleBodyDragStart}
+            onDragOver={handleBodyDragOver}
+            onDrop={handleBodyDrop}
+            onDragEnd={handleBodyDragEnd}
             data-placeholder="本文を入力..."
             className="kv-body-edit kv-richtext"
             style={{ flex: 1, minHeight: 360, boxSizing: 'border-box', fontFamily: 'var(--font-sans)', padding: '1.2rem 1.4rem', border: '1px solid var(--border)', borderRadius: '0 0 10px 10px', outline: 'none', background: 'var(--surface)' }}

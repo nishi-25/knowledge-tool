@@ -27,8 +27,9 @@ export function calendarHtml(year, month) {
     .join('');
 
   return (
-    `<div data-kv-block="calendar" contenteditable="false" style="margin:0.8rem 0; width:420px; max-width:100%; box-sizing:border-box;">` +
-    `<div style="display:flex; align-items:center; margin-bottom:0.4rem;">` +
+    `<div data-kv-block="calendar" draggable="true" contenteditable="false" style="margin:0.8rem 0; width:420px; max-width:100%; box-sizing:border-box;">` +
+    `<div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.4rem;">` +
+    `<span data-kv-drag-handle contenteditable="false" title="ドラッグして移動" style="cursor:grab;color:var(--text-muted);font-size:0.8rem;flex-shrink:0;"><i class="bi bi-grip-vertical"></i></span>` +
     `<span style="font-size:0.85rem;font-weight:700;color:var(--text-strong);">${year}年${month}月</span>` +
     `<span data-kv-remove contenteditable="false" style="margin-left:auto;cursor:pointer;color:var(--text-muted);font-size:0.8rem;"><i class="bi bi-x-lg"></i></span>` +
     `</div>` +
