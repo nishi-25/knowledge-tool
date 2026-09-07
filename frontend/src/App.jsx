@@ -13,6 +13,7 @@ import ForcedPasswordChangeModal from './components/ForcedPasswordChangeModal.js
 import InviteScreen from './components/InviteScreen.jsx';
 import AdminApp from './components/AdminApp.jsx';
 import TemplatePickerModal from './components/TemplatePickerModal.jsx';
+import PromptModal from './components/PromptModal.jsx';
 
 function parseInviteToken() {
   const match = window.location.pathname.match(/^\/invite\/([^/]+)/);
@@ -43,13 +44,13 @@ export default function App() {
   const [tags, setTags] = useState([]);
 
   const [view, setView] = useState('home');
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState('');
   const [activeFolder, setActiveFolder] = useState('');
   const [activeTag, setActiveTag] = useState(null);
   const [editorState, setEditorState] = useState(null);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [namePrompt, setNamePrompt] = useState(null);
 
   const isOwner = currentProject.role === 'owner';
 
@@ -61,7 +62,6 @@ export default function App() {
 
   const resetWorkspaceView = () => {
     setView('home');
-    setFavoritesOnly(false);
     setSelectedId(null);
     setQuery('');
     setActiveFolder('');
@@ -114,19 +114,18 @@ export default function App() {
 
   const filteredArticles = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const pool = favoritesOnly ? articles.filter((a) => a.favorite) : articles;
-    return pool
+    return articles
       .filter((a) =>
         (!q || a.title.toLowerCase().includes(q) || a.excerpt.toLowerCase().includes(q)) &&
         (!activeFolder || a.folder === activeFolder) &&
         (!activeTag || a.tags.includes(activeTag))
       )
       .sort((a, b) => b.updated.localeCompare(a.updated));
-  }, [articles, favoritesOnly, query, activeFolder, activeTag]);
+  }, [articles, query, activeFolder, activeTag]);
 
   const curArticle = useMemo(
-    () => filteredArticles.find((a) => a.id === selectedId) || filteredArticles[0] || null,
-    [filteredArticles, selectedId]
+    () => filteredArticles.find((a) => a.id === selectedId) || articles.find((a) => a.id === selectedId) || filteredArticles[0] || null,
+    [filteredArticles, articles, selectedId]
   );
 
   const currentForView = curArticle ? { ...curArticle, folderMeta: folderMeta(folders, curArticle.folder) } : null;
@@ -139,12 +138,10 @@ export default function App() {
   }, [articles, curArticle]);
 
   const goHome = () => setView('home');
-  const openLibrary = () => { setView('library'); setFavoritesOnly(false); };
-  const openFavorites = () => { setView('library'); setFavoritesOnly(true); setActiveFolder(''); setActiveTag(null); };
+  const openLibrary = () => { setView('library'); setQuery(''); setActiveTag(null); };
   const goOrganize = () => setView('organize');
-  const openFolderView = (id) => { setView('library'); setFavoritesOnly(false); setActiveFolder(id); setActiveTag(null); };
-  const openTagView = (tag) => { setView('library'); setFavoritesOnly(false); setActiveTag(tag); setActiveFolder(''); };
-  const toggleFolderFilterInLibrary = (id) => setActiveFolder((prev) => (prev === id ? '' : id));
+  const openFolderView = (id) => { setView('library'); setQuery(''); setActiveFolder(id); setActiveTag(null); };
+  const openTagView = (tag) => { setView('library'); setActiveTag(tag); setActiveFolder(''); };
 
   const toggleFavorite = async (id) => {
     const updated = await api.toggleFavorite(id);
@@ -153,6 +150,44 @@ export default function App() {
 
   const addFolder = async (label) => setFolders(await api.addFolder(label));
   const addTag = async (label) => setTags(await api.addTag(label));
+
+  const openNewFolderPrompt = () => setNamePrompt({ mode: 'new-folder', title: '新規フォルダ', label: 'フォルダ名' });
+  const openNewTagPrompt = () => setNamePrompt({ mode: 'new-tag', title: '新規タグ', label: 'タグ名' });
+  const openRenameFolderPrompt = (folder) => setNamePrompt({ mode: 'rename-folder', targetId: folder.id, initialValue: folder.label, title: 'フォルダ名を変更', label: 'フォルダ名' });
+  const openRenameTagPrompt = (tag) => setNamePrompt({ mode: 'rename-tag', targetId: tag.id, initialValue: tag.label, title: 'タグ名を変更', label: 'タグ名' });
+
+  const submitNamePrompt = async (value) => {
+    const { mode, targetId } = namePrompt;
+    if (mode === 'new-folder') {
+      await addFolder(value);
+    } else if (mode === 'rename-folder') {
+      await api.renameFolder(targetId, value);
+      await Promise.all([refreshFolders(), refreshArticles()]);
+    } else if (mode === 'new-tag') {
+      await addTag(value);
+    } else if (mode === 'rename-tag') {
+      await api.renameTag(targetId, value);
+      await Promise.all([refreshTags(), refreshArticles()]);
+    }
+    setNamePrompt(null);
+  };
+
+  const deleteFolder = async (id) => {
+    await api.deleteFolder(id);
+    await Promise.all([refreshFolders(), refreshArticles()]);
+    if (activeFolder === id) setActiveFolder('');
+  };
+
+  const deleteTag = async (id) => {
+    await api.deleteTag(id);
+    await Promise.all([refreshTags(), refreshArticles()]);
+  };
+
+  const deleteArticle = async (id) => {
+    await api.deleteArticle(id);
+    await refreshArticles();
+    if (selectedId === id) setSelectedId(null);
+  };
 
   const startNewArticle = () => {
     if (!isOwner) return;
@@ -194,7 +229,6 @@ export default function App() {
       : await api.createArticle(payload);
     await Promise.all([refreshArticles(), refreshFolders(), refreshTags()]);
     setView('library');
-    setFavoritesOnly(false);
     setSelectedId(saved.id);
     setEditorState(null);
   };
@@ -301,7 +335,7 @@ export default function App() {
     );
   }
 
-  const activeKey = view === 'editor' ? null : view === 'library' ? (favoritesOnly ? 'favorites' : 'library') : view;
+  const activeKey = view === 'editor' ? null : view;
   const currentStorage = storageOptions.find((o) => o.id === currentProject.storageProvider) || storageOptions[0] || { icon: 'bi bi-hdd-fill', label: '' };
 
   return (
@@ -312,10 +346,11 @@ export default function App() {
           if (key === 'home') goHome();
           else if (key === 'library') openLibrary();
           else if (key === 'organize') goOrganize();
-          else if (key === 'favorites') openFavorites();
           else if (key === 'settings') setView('settings');
         }}
         onNewArticle={startNewArticle}
+        onNewFolder={openNewFolderPrompt}
+        onNewTag={openNewTagPrompt}
         isOwner={isOwner}
         currentUser={currentUser}
         onLogout={handleLogout}
@@ -326,21 +361,22 @@ export default function App() {
           articles={articles}
           folders={folders}
           tags={tags}
-          onOpenArticle={(id) => { setView('library'); setFavoritesOnly(false); setSelectedId(id); }}
+          onOpenArticle={(id) => { setView('library'); setSelectedId(id); }}
           onToggleTagFilter={openTagView}
           onOpenFolder={openFolderView}
-          onSearchAll={(q) => { setQuery(q); setView('library'); setFavoritesOnly(false); }}
+          onSearchAll={(q) => { setQuery(q); setView('library'); }}
         />
       )}
 
       {view === 'library' && (
         <Library
-          favoritesOnly={favoritesOnly}
           query={query}
           onQueryChange={setQuery}
+          activeTag={activeTag}
+          onClearTag={() => setActiveTag(null)}
           folders={folders}
-          folderChipsActive={activeFolder}
-          onToggleFolderFilter={toggleFolderFilterInLibrary}
+          articles={articles}
+          activeFolder={activeFolder}
           filteredArticles={filteredArticles}
           selectedId={curArticle?.id ?? null}
           onSelectArticle={setSelectedId}
@@ -351,6 +387,11 @@ export default function App() {
           onOpenArticle={setSelectedId}
           isOwner={isOwner}
           currentUser={currentUser}
+          onNewFolder={openNewFolderPrompt}
+          onRenameFolder={openRenameFolderPrompt}
+          onDeleteFolder={deleteFolder}
+          onNewArticle={startNewArticle}
+          onDeleteArticle={deleteArticle}
         />
       )}
 
@@ -363,6 +404,10 @@ export default function App() {
           onAddFolder={addFolder}
           onAddTag={addTag}
           isOwner={isOwner}
+          onRenameFolder={openRenameFolderPrompt}
+          onDeleteFolder={deleteFolder}
+          onRenameTag={openRenameTagPrompt}
+          onDeleteTag={deleteTag}
         />
       )}
 
@@ -395,6 +440,15 @@ export default function App() {
         open={templatePickerOpen}
         onClose={() => setTemplatePickerOpen(false)}
         onSelect={beginArticleFromTemplate}
+      />
+
+      <PromptModal
+        open={!!namePrompt}
+        title={namePrompt?.title}
+        label={namePrompt?.label}
+        initialValue={namePrompt?.initialValue}
+        onSubmit={submitNamePrompt}
+        onClose={() => setNamePrompt(null)}
       />
     </div>
   );

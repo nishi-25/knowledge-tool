@@ -5,6 +5,7 @@ import Button from './ui/Button.jsx';
 
 export default function Organize({
   folders, tags, onOpenFolder, onOpenTag, onAddFolder, onAddTag, isOwner,
+  onRenameFolder, onDeleteFolder, onRenameTag, onDeleteTag,
 }) {
   const [newFolderName, setNewFolderName] = useState('');
   const [newTagName, setNewTagName] = useState('');
@@ -35,6 +36,23 @@ export default function Organize({
                 </div>
                 <div style={{ flex: 1, fontSize: '0.9rem', fontWeight: 600 }}>{f.label}</div>
                 <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>{f.count}件</span>
+                {isOwner && (
+                  <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+                    <i
+                      className="bi bi-pencil"
+                      onClick={(e) => { e.stopPropagation(); onRenameFolder(f); }}
+                      style={{ color: 'var(--text-muted)', fontSize: '0.82rem', cursor: 'pointer' }}
+                    />
+                    <i
+                      className="bi bi-trash"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`「${f.label}」を削除しますか？中の記事は「フォルダなし」に移動します。`)) onDeleteFolder(f.id);
+                      }}
+                      style={{ color: 'var(--danger)', fontSize: '0.82rem', cursor: 'pointer' }}
+                    />
+                  </div>
+                )}
               </div>
             ))}
             {isOwner && (
@@ -48,8 +66,18 @@ export default function Organize({
           <Card title="タグ" icon="tags">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               {tags.map((t) => (
-                <span key={t.id} onClick={() => onOpenTag(t.label)} style={{ cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, padding: '0.4em 0.8em', borderRadius: 999, background: 'var(--note-bg)', color: 'var(--primary-dark)', display: 'inline-flex', alignItems: 'center', gap: '0.4em' }}>
-                  #{t.label} <span style={{ opacity: 0.6, fontWeight: 500 }}>{t.count}</span>
+                <span key={t.id} style={{ fontSize: '0.8rem', fontWeight: 600, padding: '0.4em 0.8em', borderRadius: 999, background: 'var(--note-bg)', color: 'var(--primary-dark)', display: 'inline-flex', alignItems: 'center', gap: '0.5em' }}>
+                  <span onClick={() => onOpenTag(t.label)} style={{ cursor: 'pointer' }}>#{t.label} <span style={{ opacity: 0.6, fontWeight: 500 }}>{t.count}</span></span>
+                  {isOwner && (
+                    <>
+                      <i className="bi bi-pencil" onClick={() => onRenameTag(t)} style={{ fontSize: '0.72rem', cursor: 'pointer' }} />
+                      <i
+                        className="bi bi-trash"
+                        onClick={() => { if (window.confirm(`タグ「${t.label}」を削除しますか？`)) onDeleteTag(t.id); }}
+                        style={{ fontSize: '0.72rem', cursor: 'pointer', color: 'var(--danger)' }}
+                      />
+                    </>
+                  )}
                 </span>
               ))}
             </div>

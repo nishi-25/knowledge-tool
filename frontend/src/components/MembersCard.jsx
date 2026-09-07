@@ -9,6 +9,7 @@ export default function MembersCard({ currentUserId }) {
   const [pending, setPending] = useState([]);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
 
   const refresh = async () => {
     const [memberList, pendingList] = await Promise.all([api.listMembers(), api.listPendingRequests()]);
@@ -50,6 +51,10 @@ export default function MembersCard({ currentUserId }) {
   const demote = (userId) => runAction(() => api.demoteMember(userId));
 
   const ownerCount = members.filter((m) => m.role === 'owner').length;
+  const q = search.trim().toLowerCase();
+  const filteredMembers = q
+    ? members.filter((m) => m.displayName.toLowerCase().includes(q) || m.email.toLowerCase().includes(q))
+    : members;
 
   return (
     <Card title="メンバー管理" icon="people" style={{ marginTop: '1.2rem' }}>
@@ -83,8 +88,20 @@ export default function MembersCard({ currentUserId }) {
       )}
 
       <div>
-        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>メンバー（{members.length}）</div>
-        {members.map((m) => {
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.6rem' }}>
+          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>メンバー（{members.length}）</div>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="名前・メールアドレスで検索..."
+            className="kv-input"
+            style={{ height: 32, fontSize: '0.78rem', flex: 1, maxWidth: 220, marginLeft: 'auto' }}
+          />
+        </div>
+        {filteredMembers.length === 0 && (
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '0.5rem 0' }}>該当するメンバーが見つかりません</div>
+        )}
+        {filteredMembers.map((m) => {
           const isLastOwner = m.role === 'owner' && ownerCount <= 1;
           return (
             <div key={m.userId} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.5rem 0', borderBottom: '1px solid var(--border)' }}>

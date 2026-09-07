@@ -96,6 +96,17 @@ def update_article(article_id: int, payload: ArticleIn, user: dict = Depends(get
     return existing
 
 
+@router.delete("/{article_id}")
+def delete_article(article_id: int, user: dict = Depends(get_current_user)):
+    project = resolve_current_project(user)
+    require_owner(project, user)
+    articles_store = get_articles_store(project["id"])
+    if articles_store.read(str(article_id)) is None:
+        raise HTTPException(status_code=404, detail="記事が見つかりません")
+    articles_store.delete(str(article_id))
+    return {"ok": True}
+
+
 @router.post("/{article_id}/favorite")
 def toggle_favorite(article_id: int, user: dict = Depends(get_current_user)):
     project = resolve_current_project(user)

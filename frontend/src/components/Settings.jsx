@@ -49,15 +49,6 @@ export default function Settings({
 
         {isOwner && systemInfo?.mode !== 'desktop' && <MembersCard currentUserId={currentUserId} />}
         {systemInfo?.mode === 'desktop' && <ServerLinkCard />}
-
-        <Card title="ヘルプ" icon="question-circle">
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.9rem' }}>
-            使い方や管理者機能について知りたいときは取り扱い説明書をご覧ください。
-          </div>
-          <a href="https://nishi-25.github.io/knowledge-tool/manual.html" target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" size="sm" icon="book">取り扱い説明書を開く</Button>
-          </a>
-        </Card>
       </div>
 
       <StorageChangeModal

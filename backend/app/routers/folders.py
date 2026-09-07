@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..schemas import FolderIn
 from ..store import get_folders_store, get_articles_store, slugify
@@ -43,4 +43,39 @@ def add_folder(payload: FolderIn, user: dict = Depends(get_current_user)):
         "id": folder_id, "label": label, "icon": DEFAULT_ICON,
         "color": DEFAULT_COLOR, "tint": DEFAULT_TINT, "builtin": False,
     })
+    return _with_counts(pid)
+
+
+@router.put("/{folder_id}")
+def rename_folder(folder_id: str, payload: FolderIn, user: dict = Depends(get_current_user)):
+    project = resolve_current_project(user)
+    require_owner(project, user)
+    pid = project["id"]
+    folders_store = get_folders_store(pid)
+    existing = folders_store.read(folder_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="フォルダが見つかりません")
+    label = payload.label.strip()
+    if not label:
+        raise HTTPException(status_code=400, detail="フォルダ名を入力してください")
+    existing["label"] = label
+    folders_store.write(folder_id, existing)
+    return _with_counts(pid)
+
+
+@router.delete("/{folder_id}")
+def delete_folder(folder_id: str, user: dict = Depends(get_current_user)):
+    project = resolve_current_project(user)
+    require_owner(project, user)
+    pid = project["id"]
+    folders_store = get_folders_store(pid)
+    if folders_store.read(folder_id) is None:
+        raise HTTPException(status_code=404, detail="フォルダが見つかりません")
+    folders_store.delete(folder_id)
+    # このフォルダに属していた記事は「フォルダなし」に戻す（記事自体は削除しない）
+    articles_store = get_articles_store(pid)
+    for a in articles_store.list():
+        if a.get("folder") == folder_id:
+            a["folder"] = None
+            articles_store.write(str(a["id"]), a)
     return _with_counts(pid)

@@ -100,9 +100,13 @@ export const api = {
 
   getFolders: () => request('/folders'),
   addFolder: (label) => request('/folders', { method: 'POST', body: JSON.stringify({ label }) }),
+  renameFolder: (id, label) => request(`/folders/${id}`, { method: 'PUT', body: JSON.stringify({ label }) }),
+  deleteFolder: (id) => request(`/folders/${id}`, { method: 'DELETE' }),
 
   getTags: () => request('/tags'),
   addTag: (label) => request('/tags', { method: 'POST', body: JSON.stringify({ label }) }),
+  renameTag: (id, label) => request(`/tags/${id}`, { method: 'PUT', body: JSON.stringify({ label }) }),
+  deleteTag: (id) => request(`/tags/${id}`, { method: 'DELETE' }),
 
   listArticles: (params = {}) => {
     const qs = new URLSearchParams();
@@ -116,6 +120,7 @@ export const api = {
   getArticle: (id) => request(`/articles/${id}`),
   createArticle: (data) => request('/articles', { method: 'POST', body: JSON.stringify(data) }),
   updateArticle: (id, data) => request(`/articles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteArticle: (id) => request(`/articles/${id}`, { method: 'DELETE' }),
   toggleFavorite: (id) => request(`/articles/${id}/favorite`, { method: 'POST' }),
 
   runOcr: () => request('/tools/ocr', { method: 'POST' }),

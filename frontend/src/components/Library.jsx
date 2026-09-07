@@ -2,63 +2,77 @@ import { useEffect, useRef } from 'react';
 import SearchBox from './ui/SearchBox.jsx';
 import Button from './ui/Button.jsx';
 import CommentThread from './CommentThread.jsx';
+import ArticleTree from './ArticleTree.jsx';
 import { fmtDate, folderMeta } from '../utils.js';
 import { renderMermaidIn } from '../mermaidUtils.js';
 import { sanitizeArticleHtml } from '../sanitizeHtml.js';
 
 export default function Library({
-  favoritesOnly, query, onQueryChange, folders, folderChipsActive, onToggleFolderFilter,
+  query, onQueryChange, activeTag, onClearTag, folders, articles,
   filteredArticles, selectedId, onSelectArticle, current, relatedArticles,
   onToggleFavorite, onEditCurrent, onOpenArticle, isOwner, currentUser,
+  activeFolder, onNewFolder, onRenameFolder, onDeleteFolder, onNewArticle, onDeleteArticle,
 }) {
   const bodyRef = useRef(null);
   useEffect(() => {
     renderMermaidIn(bodyRef.current);
   }, [current?.id, current?.bodyHtml]);
 
+  const showFlatList = Boolean(query.trim()) || Boolean(activeTag);
+
   return (
     <>
-      <div style={{ width: 380, flexShrink: 0, background: 'var(--surface)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div className="kv-article-list-panel" style={{ width: 380, flexShrink: 0, background: 'var(--surface)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ padding: '1.2rem 1.2rem 0.8rem', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-strong)', marginBottom: '0.7rem' }}>
-            {favoritesOnly ? 'お気に入り' : '記事一覧・検索'}
-          </div>
-          <SearchBox placeholder="検索..." value={query} onChange={onQueryChange} height={36} style={{ width: '100%', marginBottom: '0.7rem' }} />
-          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-            {folders.map((f) => (
-              <span
-                key={f.id}
-                onClick={() => onToggleFolderFilter(f.id)}
-                className={`kv-chip${folderChipsActive === f.id ? ' on' : ''}`}
-                style={{ fontSize: '0.72rem', fontWeight: 600, padding: '0.28em 0.65em', borderRadius: 8 }}
-              >
-                <i className={f.icon} style={{ marginRight: 3 }} />{f.label}
+          <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-strong)', marginBottom: '0.7rem' }}>記事</div>
+          <SearchBox placeholder="記事を検索..." value={query} onChange={onQueryChange} height={36} style={{ width: '100%' }} />
+          {activeTag && (
+            <div style={{ marginTop: '0.7rem' }}>
+              <span className="kv-chip on" style={{ fontSize: '0.72rem', fontWeight: 600, padding: '0.28em 0.65em', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: '0.4em' }}>
+                #{activeTag}
+                <i className="bi bi-x" onClick={onClearTag} style={{ cursor: 'pointer' }} />
               </span>
-            ))}
-          </div>
-        </div>
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {filteredArticles.map((a) => {
-            const fm = folderMeta(folders, a.folder);
-            return (
-              <div key={a.id} onClick={() => onSelectArticle(a.id)} className={`kv-list-row${a.id === selectedId ? ' active' : ''}`} style={{ padding: '0.85rem 1.2rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.3rem' }}>
-                  <i className={fm.icon} style={{ color: fm.color, fontSize: '0.78rem' }} />
-                  <span style={{ fontSize: '0.68rem', fontWeight: 700, color: fm.color }}>{fm.label}</span>
-                  <span style={{ marginLeft: 'auto', fontSize: '0.68rem', color: 'var(--text-muted)' }}>{fmtDate(a.updated)}</span>
-                </div>
-                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-strong)', lineHeight: 1.4, marginBottom: '0.3rem' }}>{a.title}</div>
-                <div className="kv-line-clamp-1" style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{a.excerpt}</div>
-              </div>
-            );
-          })}
-          {filteredArticles.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)' }}>
-              <i className="bi bi-search" style={{ fontSize: '1.6rem', opacity: 0.4 }} />
-              <div style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>該当する記事がありません</div>
             </div>
           )}
         </div>
+        {showFlatList ? (
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            {filteredArticles.map((a) => {
+              const fm = folderMeta(folders, a.folder);
+              return (
+                <div key={a.id} onClick={() => onSelectArticle(a.id)} className={`kv-list-row${a.id === selectedId ? ' active' : ''}`} style={{ padding: '0.85rem 1.2rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.3rem' }}>
+                    <i className={fm.icon} style={{ color: fm.color, fontSize: '0.78rem' }} />
+                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: fm.color }}>{fm.label}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '0.68rem', color: 'var(--text-muted)' }}>{fmtDate(a.updated)}</span>
+                  </div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-strong)', lineHeight: 1.4, marginBottom: '0.3rem' }}>{a.title}</div>
+                  <div className="kv-line-clamp-1" style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{a.excerpt}</div>
+                </div>
+              );
+            })}
+            {filteredArticles.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)' }}>
+                <i className="bi bi-search" style={{ fontSize: '1.6rem', opacity: 0.4 }} />
+                <div style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>該当する記事がありません</div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <ArticleTree
+            articles={articles}
+            folders={folders}
+            activeFolder={activeFolder}
+            selectedId={selectedId}
+            onSelectArticle={onSelectArticle}
+            isOwner={isOwner}
+            onNewFolder={onNewFolder}
+            onRenameFolder={onRenameFolder}
+            onDeleteFolder={onDeleteFolder}
+            onNewArticle={onNewArticle}
+            onDeleteArticle={onDeleteArticle}
+          />
+        )}
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '2.4rem 3rem' }}>
@@ -74,6 +88,15 @@ export default function Library({
                   {current.favorite ? 'お気に入り済み' : 'お気に入り'}
                 </Button>
                 {isOwner && <Button size="sm" variant="outline" icon="pencil" onClick={onEditCurrent}>編集</Button>}
+                {isOwner && (
+                  <Button
+                    size="sm" variant="ghost" icon="trash"
+                    onClick={() => { if (window.confirm(`「${current.title}」を削除しますか？元に戻せません。`)) onDeleteArticle(current.id); }}
+                    style={{ color: 'var(--danger)' }}
+                  >
+                    削除
+                  </Button>
+                )}
               </div>
             </div>
             <div style={{ fontSize: '1.7rem', fontWeight: 700, color: 'var(--text-strong)', lineHeight: 1.35, marginBottom: '0.9rem' }}>{current.title}</div>

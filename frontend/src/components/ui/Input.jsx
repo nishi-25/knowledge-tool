@@ -1,4 +1,4 @@
-export default function Input({ label, placeholder, value, onChange, icon, style, height = 40 }) {
+export default function Input({ label, placeholder, value, onChange, icon, style, height = 40, onKeyDown }) {
   return (
     <div style={style}>
       {label && <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 6 }}>{label}</div>}
@@ -15,6 +15,7 @@ export default function Input({ label, placeholder, value, onChange, icon, style
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={onKeyDown}
         />
       </div>
     </div>
