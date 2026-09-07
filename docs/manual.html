@@ -53,6 +53,10 @@
     <div class="toc-group-title">デスクトップ版</div>
     <a href="#desktop-app">デスクトップ版の使い方</a>
 
+    <div class="toc-group-title">データ連携</div>
+    <a href="#data-export">JSONエクスポート・インポート</a>
+    <a href="#api">外部API</a>
+
     <div class="toc-group-title">その他</div>
     <a href="#faq">よくある質問</a>
     <a href="#license">ライセンス・免責事項</a>
@@ -201,14 +205,61 @@
       <p>基本的な使い方（記事の作成・編集・検索・整理）はWeb版と同じです。ただしデスクトップ版は1人のローカルユーザーとして動作するため、チームでの招待・承認やメンバー管理の機能は表示されません。</p>
 
       <h3>チームのサーバーに接続する</h3>
-      <p>チームで運用しているKnowledge Viewサーバーがある場合、設定画面の「サーバーとの連携」から接続できます。</p>
+      <p>チームで運用しているKnowledge Viewサーバーがある場合、設定画面の「サーバーとの連携」から接続できます。接続してもローカルのデータは消えず、ローカルとサーバー、両方のデータを切り替えて使えます。</p>
       <img src="assets/manual-desktop-settings.png" alt="デスクトップ版の設定画面（サーバーとの連携）">
       <ol>
         <li>サーバーのURLを入力し、「接続テストする」を押す（Knowledge Viewサーバーであることを自動で確認します）。</li>
-        <li>接続に成功したら、そのサーバーのアカウントのメールアドレス・パスワードでログインする。</li>
-        <li>以降はそのサーバー上のプロジェクトを、ログインした状態で利用できます。</li>
+        <li>接続に成功すると「サーバーと接続しますか？」の確認が表示されるので、OKを押す。</li>
+        <li>ログイン画面が表示されるので、そのサーバーのアカウントのメールアドレス・パスワードでログインする。</li>
       </ol>
-      <p>「ローカルに戻る」を押すといつでも接続を解除し、ログイン不要のローカル動作に戻せます。</p>
+      <p>ログインすると「記事」画面のフォルダツリー上部に「ローカル」「サーバー」タブが表示され、いつでも行き来できます。設定画面の「連携を解除する」を押すと、サーバーとの連携自体を解除できます。</p>
+    </section>
+
+    <section class="manual-section" id="data-export">
+      <h2>JSONエクスポート・インポート</h2>
+      <p class="lead">フォルダ・タグ・記事をJSON形式でエクスポート・インポートできます。バックアップのほか、AIツールへ読み込ませる用途にもご利用いただけます（サーバー版・デスクトップ版共通）。</p>
+
+      <h3>エクスポート</h3>
+      <ul>
+        <li><strong>プロジェクト全体</strong>：「設定」画面の「データのエクスポート・インポート」にある「プロジェクト全体をJSONでエクスポート」から、フォルダ・タグ・記事すべてを1つのJSONファイルとしてダウンロードできます。</li>
+        <li><strong>記事1件のみ</strong>：記事の閲覧画面にある「エクスポート」ボタンから、その記事だけをJSONファイルとしてダウンロードできます。</li>
+      </ul>
+      <p>エクスポートしたJSONには、本文のHTMLに加えてプレーンテキスト版（<code>bodyText</code>）も含まれており、AIツールに読み込ませる際にそのまま使いやすくなっています。</p>
+
+      <h3>インポート</h3>
+      <p>「設定」画面の「データのエクスポート・インポート」から、プロジェクト全体・記事1件単位のどちらのJSONファイルもインポートできます（プロジェクトのオーナーのみ）。</p>
+      <div class="tip-box">💡 インポートは既存の記事に追加される形で取り込まれます。フォルダ・タグは同名のものがあればそのまま使われ、無ければ新規作成されます。既存のデータが上書きされることはありません。</div>
+    </section>
+
+    <section class="manual-section" id="api">
+      <h2>外部API</h2>
+      <p class="lead">外部プログラムから記事・フォルダを取得・追加・削除できるAPIです（サーバー版・デスクトップ版共通）。AIエージェントからの読み書きや、他システムとの連携にご利用いただけます。</p>
+
+      <h3>APIキーの発行</h3>
+      <p>「設定」画面の「外部APIキー」から発行できます（プロジェクトのオーナーのみ）。発行直後の1回だけキーの全文が表示されるので、必ずその場でコピーして安全な場所に保管してください。不要になったキーはいつでも失効できます。</p>
+      <div class="warn-box">⚠️ APIキーはそのキーを発行したプロジェクトのデータにのみアクセスできます。他人と共有しないでください。</div>
+
+      <h3>使い方</h3>
+      <p>リクエストヘッダーに <code>X-API-Key</code> を付けてアクセスします。</p>
+      <pre class="code">curl -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/articles</pre>
+      <pre class="code">curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" -H "Content-Type: application/json" \
+  https://your-server/api/v1/articles \
+  -d '{"title": "タイトル", "folder": null, "tags": ["タグ1"], "bodyHtml": "&lt;p&gt;本文&lt;/p&gt;"}'</pre>
+      <p>デスクトップ版の場合は、設定画面の「サーバーとの連携」や「外部APIキー」に表示されているアドレス（例: <code>http://127.0.0.1:8765/api</code>）を使ってください。</p>
+
+      <h3>エンドポイント一覧</h3>
+      <table class="role-table">
+        <tr><th>メソッド</th><th>パス</th><th>内容</th></tr>
+        <tr><td>GET</td><td><code>/api/v1/articles</code></td><td>記事一覧を取得</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/articles/{id}</code></td><td>記事を1件取得</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/articles</code></td><td>記事を作成</td></tr>
+        <tr><td>PUT</td><td><code>/api/v1/articles/{id}</code></td><td>記事を更新</td></tr>
+        <tr><td>DELETE</td><td><code>/api/v1/articles/{id}</code></td><td>記事を削除</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/folders</code></td><td>フォルダ一覧を取得</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/folders</code></td><td>フォルダを作成</td></tr>
+        <tr><td>DELETE</td><td><code>/api/v1/folders/{id}</code></td><td>フォルダを削除</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/tags</code></td><td>タグ一覧を取得</td></tr>
+      </table>
     </section>
 
     <section class="manual-section" id="faq">
