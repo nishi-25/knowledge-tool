@@ -136,3 +136,7 @@ class AdminLoginSettingsIn(BaseModel):
 
 class AdminMoveArticleIn(BaseModel):
     folder: Optional[str] = None
+
+
+class AdminProjectUpdateIn(BaseModel):
+    name: str

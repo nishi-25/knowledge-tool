@@ -239,12 +239,19 @@ function ProjectsCard({ onSelect }) {
   );
 }
 
+const TABS = [
+  { key: 'general', label: '全般設定', icon: 'sliders' },
+  { key: 'users', label: 'ユーザー管理', icon: 'people' },
+  { key: 'projects', label: 'プロジェクト管理', icon: 'collection' },
+];
+
 export default function AdminApp() {
   const [checked, setChecked] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [desktopMode, setDesktopMode] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [projectsKey, setProjectsKey] = useState(0);
+  const [activeTab, setActiveTab] = useState('general');
 
   useEffect(() => {
     (async () => {
@@ -294,31 +301,65 @@ export default function AdminApp() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--app-bg)', padding: '2.4rem 3rem' }}>
-      <div style={{ maxWidth: 760, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.6rem' }}>
-          <div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-strong)' }}>管理者パネル</div>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>すべてのプロジェクトとユーザーを管理します</div>
-          </div>
-          <Button variant="ghost" size="sm" icon="box-arrow-right" onClick={handleLogout} style={{ marginLeft: 'auto' }}>ログアウト</Button>
+    <div style={{ minHeight: '100vh', background: 'var(--app-bg)', display: 'flex' }}>
+      <div style={{
+        width: 232, flexShrink: 0, background: 'var(--surface)', borderRight: '1px solid var(--border)',
+        display: 'flex', flexDirection: 'column', padding: '1.6rem 1rem',
+      }}>
+        <div style={{ padding: '0 0.5rem', marginBottom: '1.8rem' }}>
+          <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-strong)' }}>管理者パネル</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>すべてのプロジェクトとユーザーを管理します</div>
         </div>
 
-        <LoginSettingsCard />
-        <PasswordChangeCard />
-        <UsersCard />
-        <ProjectsCard
-          key={projectsKey}
-          onSelect={(id) => setSelectedProjectId(id)}
-        />
-        {selectedProjectId && (
-          <AdminProjectPanel
-            projectId={selectedProjectId}
-            onClose={() => setSelectedProjectId(null)}
-            onChanged={() => setProjectsKey((k) => k + 1)}
-          />
-        )}
+        {TABS.map((t) => {
+          const active = activeTab === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.7rem', marginBottom: '0.2rem',
+                borderRadius: 10, border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+                background: active ? 'var(--note-bg)' : 'transparent',
+                color: active ? 'var(--primary-dark)' : 'var(--text-body)',
+                fontWeight: active ? 700 : 500, fontSize: '0.88rem',
+              }}
+            >
+              <i className={`bi bi-${t.icon}`} style={{ fontSize: '0.95rem' }} />
+              {t.label}
+            </button>
+          );
+        })}
+
+        <div style={{ flex: 1 }} />
+        <Button variant="ghost" size="sm" icon="box-arrow-right" onClick={handleLogout}>ログアウト</Button>
       </div>
+
+      <div style={{ flex: 1, padding: '2.4rem 3rem', overflowY: 'auto' }}>
+        <div style={{ maxWidth: 760 }}>
+          {activeTab === 'general' && (
+            <>
+              <LoginSettingsCard />
+              <PasswordChangeCard />
+            </>
+          )}
+          {activeTab === 'users' && <UsersCard />}
+          {activeTab === 'projects' && (
+            <ProjectsCard
+              key={projectsKey}
+              onSelect={(id) => setSelectedProjectId(id)}
+            />
+          )}
+        </div>
+      </div>
+
+      {selectedProjectId && (
+        <AdminProjectPanel
+          projectId={selectedProjectId}
+          onClose={() => setSelectedProjectId(null)}
+          onChanged={() => setProjectsKey((k) => k + 1)}
+        />
+      )}
     </div>
   );
 }

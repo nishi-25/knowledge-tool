@@ -23,9 +23,10 @@ from ..schemas import (
     AdminLoginIn,
     AdminLoginSettingsIn,
     AdminMoveArticleIn,
+    AdminProjectUpdateIn,
     AdminSetupIn,
 )
-from ..store import get_articles_store, get_folders_store, projects_index_store
+from ..store import get_articles_store, get_comments_store, get_folders_store, get_tags_store, projects_index_store
 
 
 def _block_in_desktop_mode() -> None:
@@ -307,6 +308,32 @@ def get_project_detail(project_id: str, _: None = Depends(get_current_admin)):
         "articles": articles,
         "folders": folders,
     }
+
+
+@router.put("/projects/{project_id}")
+def rename_project(project_id: str, payload: AdminProjectUpdateIn, _: None = Depends(get_current_admin)):
+    project = _require_project(project_id)
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="プロジェクト名を入力してください")
+    project["name"] = name
+    projects_index_store.write(project_id, project)
+    return {"ok": True}
+
+
+@router.delete("/projects/{project_id}")
+def delete_project(project_id: str, _: None = Depends(get_current_admin)):
+    project = _require_project(project_id)
+    for store in (
+        get_articles_store(project_id),
+        get_folders_store(project_id),
+        get_tags_store(project_id),
+        get_comments_store(project_id),
+    ):
+        for item in store.list():
+            store.delete(str(item["id"]))
+    projects_index_store.delete(project_id)
+    return {"ok": True}
 
 
 @router.post("/projects/{project_id}/members/{user_id}/approve")
