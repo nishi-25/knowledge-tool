@@ -1,6 +1,6 @@
 {
   "name": "knowledge-view-desktop",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "private": true,
   "description": "Knowledge View デスクトップ版",
   "author": {
@@ -41,7 +41,7 @@
       "artifactName": "KnowledgeView-Setup.exe",
       "icon": "assets/icon.png",
       "extraResources": [
-        { "from": "dist/knowledge-view-backend.exe", "to": "backend/knowledge-view-backend.exe" }
+        { "from": "dist/knowledge-view-backend", "to": "backend" }
       ]
     },
     "nsis": {
@@ -50,14 +50,15 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Knowledge View"
+      "shortcutName": "Knowledge View",
+      "runAfterFinish": false
     },
     "mac": {
       "target": "dmg",
       "artifactName": "KnowledgeView.dmg",
       "icon": "assets/icon.png",
       "extraResources": [
-        { "from": "dist/knowledge-view-backend", "to": "backend/knowledge-view-backend" }
+        { "from": "dist/knowledge-view-backend", "to": "backend" }
       ]
     },
     "linux": {
@@ -66,7 +67,7 @@
       "category": "Office",
       "icon": "assets/icon.png",
       "extraResources": [
-        { "from": "dist/knowledge-view-backend", "to": "backend/knowledge-view-backend" }
+        { "from": "dist/knowledge-view-backend", "to": "backend" }
       ]
     }
   }

@@ -31,12 +31,25 @@ function showFatalError(message) {
   app.quit();
 }
 
+function killBackend() {
+  if (!backendProcess || backendProcess.killed) return;
+  if (process.platform === 'win32' && backendProcess.pid) {
+    // 子プロセスだけでなくプロセスツリー全体を強制終了する。取り残された
+    // プロセスがインストールフォルダのファイルをロックしたままになると、
+    // 次回起動時の失敗やアンインストールが完了しない不具合につながるため。
+    spawn('taskkill', ['/pid', String(backendProcess.pid), '/t', '/f']);
+  } else {
+    backendProcess.kill();
+  }
+}
+
 function backendExecutablePath() {
   const name = process.platform === 'win32' ? 'knowledge-view-backend.exe' : 'knowledge-view-backend';
   if (app.isPackaged) {
     return path.join(process.resourcesPath, 'backend', name);
   }
-  return path.join(__dirname, 'dist', name);
+  // PyInstaller onedir 出力: dist/knowledge-view-backend/knowledge-view-backend(.exe)
+  return path.join(__dirname, 'dist', 'knowledge-view-backend', name);
 }
 
 function frontendDir() {
@@ -166,5 +179,5 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
-  if (backendProcess) backendProcess.kill();
+  killBackend();
 });
