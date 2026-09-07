@@ -1,11 +1,35 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, dialog, protocol, net } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const http = require('http');
 const fs = require('fs');
+const url = require('url');
 
 const KV_PORT = 8765;
+const FRONTEND_SCHEME = 'app';
 let backendProcess = null;
+let backendReady = false;
+let fatalErrorShown = false;
+
+// Chromium blocks cross-origin fetches for <script type="module"> (which is
+// how Vite's production build always emits its entry script) when the page
+// is loaded from a plain file:// URL, leaving the window blank with no
+// visible error. Serving the built frontend through a registered "standard"
+// custom scheme instead gives it a real origin, avoiding that restriction.
+// This must run before app is ready.
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: FRONTEND_SCHEME,
+    privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
+  },
+]);
+
+function showFatalError(message) {
+  if (fatalErrorShown) return;
+  fatalErrorShown = true;
+  dialog.showErrorBox('Knowledge View の起動に失敗しました', message);
+  app.quit();
+}
 
 function backendExecutablePath() {
   const name = process.platform === 'win32' ? 'knowledge-view-backend.exe' : 'knowledge-view-backend';
@@ -15,18 +39,33 @@ function backendExecutablePath() {
   return path.join(__dirname, 'dist', name);
 }
 
-function frontendIndexPath() {
+function frontendDir() {
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'frontend', 'index.html');
+    return path.join(process.resourcesPath, 'frontend');
   }
-  return path.join(__dirname, '..', 'frontend', 'dist', 'index.html');
+  return path.join(__dirname, '..', 'frontend', 'dist');
+}
+
+function registerFrontendProtocol() {
+  protocol.handle(FRONTEND_SCHEME, (request) => {
+    const requestUrl = new URL(request.url);
+    let pathname = decodeURIComponent(requestUrl.pathname);
+    if (pathname === '' || pathname === '/') pathname = '/index.html';
+    const filePath = path.join(frontendDir(), pathname);
+    return net.fetch(url.pathToFileURL(filePath).toString());
+  });
 }
 
 function startBackend() {
   const dataDir = path.join(app.getPath('userData'), 'data');
   fs.mkdirSync(dataDir, { recursive: true });
 
-  backendProcess = spawn(backendExecutablePath(), [], {
+  const execPath = backendExecutablePath();
+  if (!fs.existsSync(execPath)) {
+    throw new Error(`バックエンドの実行ファイルが見つかりません: ${execPath}`);
+  }
+
+  backendProcess = spawn(execPath, [], {
     env: {
       ...process.env,
       KV_MODE: 'desktop',
@@ -38,6 +77,18 @@ function startBackend() {
 
   backendProcess.on('error', (err) => {
     console.error('バックエンドの起動に失敗しました:', err);
+    showFatalError(`バックエンドの起動に失敗しました。\n\n${err.message}`);
+  });
+
+  backendProcess.on('exit', (code, signal) => {
+    if (backendProcess && !backendReady) {
+      console.error(`バックエンドが予期せず終了しました (code=${code}, signal=${signal})`);
+      showFatalError(
+        `バックエンドが起動直後に終了しました (code=${code}, signal=${signal})。\n\n`
+        + 'セキュリティソフト（ウイルス対策ソフト）がブロックしている可能性があります。'
+        + '除外設定を確認するか、インストーラーを再実行してみてください。',
+      );
+    }
   });
 }
 
@@ -64,26 +115,46 @@ function waitForBackend(timeoutMs = 15000) {
 }
 
 async function createWindow() {
-  startBackend();
   try {
-    await waitForBackend();
+    startBackend();
   } catch (e) {
     console.error(e);
+    showFatalError(e.message);
+    return;
+  }
+
+  try {
+    await waitForBackend();
+    backendReady = true;
+  } catch (e) {
+    console.error(e);
+    showFatalError(
+      `バックエンドの起動がタイムアウトしました。\n\n`
+      + 'セキュリティソフト（ウイルス対策ソフト）がブロックしている可能性があります。'
+      + '除外設定を確認するか、インストーラーを再実行してみてください。',
+    );
+    return;
   }
 
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
+    icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: false,
       nodeIntegration: false,
     },
   });
-  win.loadFile(frontendIndexPath());
+  win.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+    console.error('画面の読み込みに失敗しました:', errorCode, errorDescription);
+    showFatalError(`画面の読み込みに失敗しました (${errorCode}: ${errorDescription})`);
+  });
+  win.loadURL(`${FRONTEND_SCHEME}://app/index.html`);
 }
 
 app.whenReady().then(() => {
+  registerFrontendProtocol();
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

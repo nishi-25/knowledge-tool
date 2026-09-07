@@ -1,6 +1,6 @@
 {
   "name": "knowledge-view-desktop",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "private": true,
   "description": "Knowledge View デスクトップ版",
   "author": {
@@ -30,7 +30,8 @@
     "files": [
       "main.js",
       "preload.js",
-      "package.json"
+      "package.json",
+      "assets/icon.png"
     ],
     "extraResources": [
       { "from": "../frontend/dist", "to": "frontend" }
@@ -38,13 +39,23 @@
     "win": {
       "target": "nsis",
       "artifactName": "KnowledgeView-Setup.exe",
+      "icon": "assets/icon.png",
       "extraResources": [
         { "from": "dist/knowledge-view-backend.exe", "to": "backend/knowledge-view-backend.exe" }
       ]
     },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Knowledge View"
+    },
     "mac": {
       "target": "dmg",
       "artifactName": "KnowledgeView.dmg",
+      "icon": "assets/icon.png",
       "extraResources": [
         { "from": "dist/knowledge-view-backend", "to": "backend/knowledge-view-backend" }
       ]
@@ -53,6 +64,7 @@
       "target": ["AppImage", "deb"],
       "artifactName": "KnowledgeView.${ext}",
       "category": "Office",
+      "icon": "assets/icon.png",
       "extraResources": [
         { "from": "dist/knowledge-view-backend", "to": "backend/knowledge-view-backend" }
       ]

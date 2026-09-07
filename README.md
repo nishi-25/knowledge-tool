@@ -74,10 +74,10 @@ pip install -r backend/requirements.txt pyinstaller
 cd desktop
 pyinstaller knowledge-view-backend.spec   # desktop/dist/knowledge-view-backend(.exe) が生成される
 
-# 2. フロントエンドをビルド
+# 2. フロントエンドをビルド（デスクトップ版はアセットパスを相対パスにする必要がある）
 cd ../frontend
 npm install
-npm run build
+KV_BUILD_TARGET=desktop npm run build
 
 # 3. Electronアプリをパッケージング
 cd ../desktop

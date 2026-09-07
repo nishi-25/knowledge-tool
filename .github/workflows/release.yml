@@ -35,6 +35,8 @@ jobs:
 
       - name: Build frontend
         working-directory: frontend
+        env:
+          KV_BUILD_TARGET: desktop
         run: |
           npm ci
           npm run build
