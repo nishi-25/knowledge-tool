@@ -55,6 +55,17 @@ export default function IconRail({ activeKey, onNavigate, onNewArticle, isOwner,
         >
           <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-strong)' }}>{currentUser?.displayName}</div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.6rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.email}</div>
+          <a
+            href="https://nishi-25.github.io/knowledge-tool/manual.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setUserMenuOpen(false)}
+            className="kv-list-row"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.5rem', borderRadius: 8, cursor: 'pointer', color: 'var(--text-body)', textDecoration: 'none' }}
+          >
+            <i className="bi bi-book" />
+            <span style={{ fontSize: '0.82rem', fontWeight: 600 }}>取り扱い説明書</span>
+          </a>
           <div
             onClick={() => { setUserMenuOpen(false); onLogout(); }}
             className="kv-list-row"
