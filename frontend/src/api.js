@@ -21,11 +21,17 @@ function currentBase() {
 
 async function request(path, options = {}) {
   const remote = getRemoteLink();
+  const isDesktopLocalBackend = typeof window !== 'undefined' && !!window.__KV_API_BASE__;
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
   const fetchOpts = { ...options, headers };
   if (remote) {
     headers.Authorization = `Bearer ${remote.token}`;
-  } else {
+  } else if (!isDesktopLocalBackend) {
+    // デスクトップ版がElectronの app:// から自身の内蔵バックエンド(http://127.0.0.1:xxxx)
+    // へ送るリクエストはオリジンが異なるため、credentials:'include' を付けると
+    // ブラウザのCORS制約（Access-Control-Allow-Originがワイルドカードの場合は
+    // 資格情報付きリクエストを拒否する）に阻まれてしまう。デスクトップモードの
+    // バックエンドはそもそもCookieを見ない固定ローカルユーザーなので不要。
     fetchOpts.credentials = 'include';
   }
   const res = await fetch(`${currentBase()}${path}`, fetchOpts);
