@@ -9,6 +9,7 @@ import TextEmbedModal from './TextEmbedModal.jsx';
 import VideoEmbedModal from './VideoEmbedModal.jsx';
 import CalendarModal from './CalendarModal.jsx';
 import DatePickerModal from './DatePickerModal.jsx';
+import DrawioModal, { extractDrawioXml } from './DrawioModal.jsx';
 import { api } from '../api.js';
 import { calloutMeta, calloutVariants, escapeHtmlAttr } from '../utils.js';
 import { sanitizeArticleHtml } from '../sanitizeHtml.js';
@@ -93,6 +94,17 @@ function dateInlineHtml(label) {
   return `<span class="kv-inline-date" contenteditable="false"><i class="bi bi-calendar-event"></i>${label}</span>&nbsp;`;
 }
 
+function drawioHtml(dataUrl) {
+  return (
+    `<div data-kv-block="drawio" contenteditable="false" style="margin:0.8rem 0; max-width:100%; box-sizing:border-box;">` +
+    `<img src="${dataUrl}" alt="図" style="max-width:100%; border:1px solid var(--border); border-radius:10px; display:block; margin:0 auto; background:#fff;" />` +
+    `<div style="display:flex;align-items:center;gap:0.6rem;margin-top:0.4rem;">` +
+    `<span data-kv-edit-drawio contenteditable="false" style="font-size:0.72rem;color:var(--primary-dark);cursor:pointer;font-weight:600;"><i class="bi bi-pencil" style="margin-right:3px;"></i>編集</span>` +
+    `<span data-kv-remove contenteditable="false" style="font-size:0.72rem;color:var(--text-muted);cursor:pointer;font-weight:600;margin-left:auto;"><i class="bi bi-x-lg"></i></span>` +
+    `</div></div><p><br></p>`
+  );
+}
+
 function expandHtml() {
   return (
     `<details data-kv-block="expand" style="border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;margin:0.8rem 0;background:var(--surface);">` +
@@ -128,6 +140,9 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   const [datePickerModalOpen, setDatePickerModalOpen] = useState(false);
+  const [drawioModalOpen, setDrawioModalOpen] = useState(false);
+  const [drawioInitialXml, setDrawioInitialXml] = useState('');
+  const drawioEditTargetRef = useRef(null);
 
   useEffect(() => {
     if (bodyEditRef.current) {
@@ -251,6 +266,12 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
       if (block) openDiagramModal(block);
       return;
     }
+    const editDrawio = e.target.closest('[data-kv-edit-drawio]');
+    if (editDrawio) {
+      const block = editDrawio.closest('[data-kv-block="drawio"]');
+      if (block) openDrawioModal(block);
+      return;
+    }
     const dayCell = e.target.closest('[data-kv-day]');
     if (dayCell && dayCell.closest('[data-kv-block="calendar"]')) {
       dayCell.classList.toggle('kv-day-selected');
@@ -306,6 +327,31 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
     setDiagramModalOpen(false);
   };
 
+  const openDrawioModal = (existingBlock) => {
+    saveSelectionRange();
+    if (existingBlock) {
+      const img = existingBlock.querySelector('img');
+      setDrawioInitialXml(img ? extractDrawioXml(img.getAttribute('src') || '') : '');
+      drawioEditTargetRef.current = existingBlock;
+    } else {
+      setDrawioInitialXml('');
+      drawioEditTargetRef.current = null;
+    }
+    setDrawioModalOpen(true);
+  };
+
+  const handleDrawioSubmit = (dataUrl) => {
+    const target = drawioEditTargetRef.current;
+    if (target) {
+      const img = target.querySelector('img');
+      if (img) img.setAttribute('src', dataUrl);
+    } else {
+      insertHtmlAtCursor(drawioHtml(dataUrl));
+    }
+    drawioEditTargetRef.current = null;
+    setDrawioModalOpen(false);
+  };
+
   const triggerImageUpload = () => {
     saveSelectionRange();
     imageInputRef.current?.click();
@@ -334,6 +380,7 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
       items: [
         { key: 'table', icon: 'bi bi-table', label: '表', description: '行・列を後から追加できる表を挿入します', run: () => insertHtmlAtCursor(tableHtml()) },
         { key: 'diagram', icon: 'bi bi-diagram-2', label: '図（フローチャート/UML/ER/ガント）', description: 'コードでも図でも編集できるMermaid図解を挿入します', run: () => openDiagramModal(null) },
+        { key: 'drawio', icon: 'bi bi-vector-pen', label: 'フリー図形（draw.io）', description: '四角・線・矢印を自由に配置して図を描けます', run: () => openDrawioModal(null) },
         { key: 'image', icon: 'bi bi-image', label: '画像', description: '画像ファイルをアップロードして挿入します', run: () => triggerImageUpload() },
         { key: 'calendar', icon: 'bi bi-calendar3', label: 'カレンダー', description: '月表示のカレンダーを挿入します', run: () => setCalendarModalOpen(true) },
         { key: 'date', icon: 'bi bi-calendar-date', label: '日時', description: 'カレンダーから選んだ日付を本文に追加します', run: () => setDatePickerModalOpen(true) },
@@ -532,6 +579,12 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
         open={datePickerModalOpen}
         onClose={() => setDatePickerModalOpen(false)}
         onSubmit={(label) => { insertHtmlAtCursor(dateInlineHtml(label)); setDatePickerModalOpen(false); }}
+      />
+      <DrawioModal
+        open={drawioModalOpen}
+        initialXml={drawioInitialXml}
+        onClose={() => setDrawioModalOpen(false)}
+        onSubmit={handleDrawioSubmit}
       />
     </div>
   );
