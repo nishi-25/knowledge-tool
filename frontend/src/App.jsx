@@ -42,6 +42,7 @@ export default function App() {
   const [articles, setArticles] = useState([]);
   const [folders, setFolders] = useState([]);
   const [tags, setTags] = useState([]);
+  const [dataSource, setDataSource] = useState(api.getActiveSource());
 
   const [view, setView] = useState('home');
   const [selectedId, setSelectedId] = useState(null);
@@ -54,12 +55,27 @@ export default function App() {
   const [namePrompt, setNamePrompt] = useState(null);
 
   const isOwner = currentProject.role === 'owner';
+  // window.__KV_API_BASE__ はElectronのpreloadが常に注入する値なので、
+  // 「サーバー」タブ表示中にsystemInfo.modeがリモート側の'server'に変わっても
+  // ぶれない、クライアント自体がデスクトップ版かどうかの安定した判定に使う。
+  const isDesktopApp = typeof window !== 'undefined' && !!window.__KV_API_BASE__;
 
   const refreshArticles = async () => setArticles(await api.listArticles());
   const refreshFolders = async () => setFolders(await api.getFolders());
   const refreshTags = async () => setTags(await api.getTags());
   const refreshProjects = async () => setProjects(await api.listProjects());
   const refreshDiscoverable = async () => setDiscoverableProjects(await api.listDiscoverableProjects());
+
+  // 記事の選択・検索条件だけをクリアする（viewは変えない）。データソース
+  // 切り替え時、古いソースの記事ID等を参照したままにならないようにするため。
+  const resetSelectionState = () => {
+    setSelectedId(null);
+    setQuery('');
+    setActiveFolder('');
+    setActiveTag(null);
+    setShowFavoritesOnly(false);
+    setEditorState(null);
+  };
 
   const resetWorkspaceView = () => {
     setView('home');
@@ -78,7 +94,21 @@ export default function App() {
         const user = await api.me();
         setCurrentUser(user);
       } catch (e) {
-        setCurrentUser(null);
+        // 前回「サーバー」タブを選んだ状態で終了し、次回起動時にそのサーバーへ
+        // 接続できない（オフライン・URL変更など）場合、ローカルに自動で
+        // フォールバックする。そうしないとログイン画面から戻れなくなる。
+        if (dataSource === 'remote') {
+          api.setActiveSource('local');
+          setDataSource('local');
+          try {
+            const user = await api.me();
+            setCurrentUser(user);
+          } catch (e2) {
+            setCurrentUser(null);
+          }
+        } else {
+          setCurrentUser(null);
+        }
       }
       try {
         setSystemInfo(await api.getSystemInfo());
@@ -90,29 +120,56 @@ export default function App() {
     })();
   }, []);
 
+  // 現在アクティブなデータソース（ローカル/サーバー）についてプロジェクト等を読み込む
+  const loadWorkspace = async () => {
+    const [current, projectList, options, sysInfo] = await Promise.all([
+      api.getCurrentProject(), api.listProjects(), api.getStorageOptions(), api.getSystemInfo(),
+    ]);
+    setCurrentProject(current);
+    setProjects(projectList);
+    setStorageOptions(options);
+    setSystemInfo(sysInfo);
+    if (current.configured) {
+      await Promise.all([refreshArticles(), refreshFolders(), refreshTags()]);
+      setShowSetup(false);
+    } else {
+      setDiscoverableProjects(await api.listDiscoverableProjects());
+      setShowSetup(true);
+      setWizardMode('select');
+    }
+    setLoading(false);
+  };
+
   // ログイン済みになったらプロジェクト等を読み込む
   useEffect(() => {
     if (!currentUser || inviteToken) return;
-    (async () => {
-      const [current, projectList, options, sysInfo] = await Promise.all([
-        api.getCurrentProject(), api.listProjects(), api.getStorageOptions(), api.getSystemInfo(),
-      ]);
-      setCurrentProject(current);
-      setProjects(projectList);
-      setStorageOptions(options);
-      setSystemInfo(sysInfo);
-      if (current.configured) {
-        await Promise.all([refreshArticles(), refreshFolders(), refreshTags()]);
-        setShowSetup(false);
-      } else {
-        setDiscoverableProjects(await api.listDiscoverableProjects());
-        setShowSetup(true);
-        setWizardMode('select');
-      }
-      setLoading(false);
-    })();
+    loadWorkspace();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, inviteToken]);
+
+  // 「記事」画面のフォルダツリーにあるローカル/サーバー切り替えタブ用。
+  // サーバー連携済みのときだけ、リクエスト先をまるごと切り替えて読み込み直す。
+  const switchDataSource = async (source) => {
+    if (source === dataSource) return;
+    if (source === 'remote' && !api.getRemoteLink()) return;
+    api.setActiveSource(source);
+    setDataSource(source);
+    resetSelectionState();
+    await loadWorkspace();
+  };
+
+  const handleServerLinked = async () => {
+    setDataSource('remote');
+    resetSelectionState();
+    setView('library');
+    await loadWorkspace();
+  };
+
+  const handleServerUnlinked = async () => {
+    setDataSource('local');
+    resetSelectionState();
+    await loadWorkspace();
+  };
 
   const filteredArticles = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -398,6 +455,9 @@ export default function App() {
           showFavoritesOnly={showFavoritesOnly}
           onShowFavorites={openFavoritesView}
           onClearFavorites={() => setShowFavoritesOnly(false)}
+          dataSource={dataSource}
+          remoteLinked={!!api.getRemoteLink()}
+          onSwitchDataSource={switchDataSource}
         />
       )}
 
@@ -425,8 +485,11 @@ export default function App() {
           systemInfo={systemInfo}
           isOwner={isOwner}
           currentUserId={currentUser.id}
+          isDesktopApp={isDesktopApp}
           onChangeStorage={changeCurrentStorage}
           onSwitchProject={openProjectSwitcher}
+          onServerLinked={handleServerLinked}
+          onServerUnlinked={handleServerUnlinked}
         />
       )}
 

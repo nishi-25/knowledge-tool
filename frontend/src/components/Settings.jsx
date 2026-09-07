@@ -6,8 +6,8 @@ import MembersCard from './MembersCard.jsx';
 import ServerLinkCard from './ServerLinkCard.jsx';
 
 export default function Settings({
-  projectName, currentStorage, resolvedPath, systemInfo, isOwner, currentUserId,
-  onSwitchProject, onChangeStorage,
+  projectName, currentStorage, resolvedPath, systemInfo, isOwner, currentUserId, isDesktopApp,
+  onSwitchProject, onChangeStorage, onServerLinked, onServerUnlinked,
 }) {
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -48,7 +48,7 @@ export default function Settings({
         </Card>
 
         {isOwner && systemInfo?.mode !== 'desktop' && <MembersCard currentUserId={currentUserId} />}
-        {systemInfo?.mode === 'desktop' && <ServerLinkCard />}
+        {isDesktopApp && <ServerLinkCard onLinked={onServerLinked} onUnlinked={onServerUnlinked} />}
       </div>
 
       <StorageChangeModal

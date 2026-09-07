@@ -1,4 +1,5 @@
 const REMOTE_LINK_KEY = 'kv_remote_link';
+const ACTIVE_SOURCE_KEY = 'kv_active_source'; // 'local' | 'remote'
 
 function getRemoteLink() {
   try {
@@ -13,19 +14,41 @@ function setRemoteLink(link) {
   else localStorage.removeItem(REMOTE_LINK_KEY);
 }
 
+function getActiveSource() {
+  try {
+    return localStorage.getItem(ACTIVE_SOURCE_KEY) || 'local';
+  } catch {
+    return 'local';
+  }
+}
+
+function setActiveSource(source) {
+  try {
+    localStorage.setItem(ACTIVE_SOURCE_KEY, source);
+  } catch {
+    // ignore
+  }
+}
+
+// 連携済みサーバーがあり、かつ現在「サーバー」タブが選ばれているときだけ
+// リクエスト先をサーバー側に切り替える。デスクトップ版はローカルとサーバーの
+// データを共存させ、フォルダツリーのタブでどちらを見るか切り替えられる。
+function isRemoteActive() {
+  return !!getRemoteLink() && getActiveSource() === 'remote';
+}
+
 function currentBase() {
-  const remote = getRemoteLink();
-  if (remote) return `${remote.url}/api`;
+  if (isRemoteActive()) return `${getRemoteLink().url}/api`;
   return (typeof window !== 'undefined' && window.__KV_API_BASE__) || '/api';
 }
 
 async function request(path, options = {}) {
-  const remote = getRemoteLink();
+  const useRemote = isRemoteActive();
   const isDesktopLocalBackend = typeof window !== 'undefined' && !!window.__KV_API_BASE__;
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
   const fetchOpts = { ...options, headers };
-  if (remote) {
-    headers.Authorization = `Bearer ${remote.token}`;
+  if (useRemote) {
+    headers.Authorization = `Bearer ${getRemoteLink().token}`;
   } else if (!isDesktopLocalBackend) {
     // デスクトップ版がElectronの app:// から自身の内蔵バックエンド(http://127.0.0.1:xxxx)
     // へ送るリクエストはオリジンが異なるため、credentials:'include' を付けると
@@ -61,6 +84,8 @@ function normalizeServerUrl(url) {
 
 export const api = {
   getRemoteLink,
+  getActiveSource,
+  setActiveSource,
 
   ping: async (url) => {
     const normalized = normalizeServerUrl(url);
@@ -82,7 +107,10 @@ export const api = {
     return data;
   },
 
-  unlinkServer: () => setRemoteLink(null),
+  unlinkServer: () => {
+    setRemoteLink(null);
+    setActiveSource('local');
+  },
 
   signup: (email, password, displayName) => request('/auth/signup', { method: 'POST', body: JSON.stringify({ email, password, displayName }) }),
   login: (email, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),

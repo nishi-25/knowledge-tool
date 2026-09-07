@@ -13,6 +13,7 @@ export default function Library({
   onToggleFavorite, onEditCurrent, onOpenArticle, isOwner, currentUser,
   activeFolder, onNewFolder, onRenameFolder, onDeleteFolder, onNewArticle, onDeleteArticle,
   showFavoritesOnly, onShowFavorites, onClearFavorites,
+  dataSource, remoteLinked, onSwitchDataSource,
 }) {
   const bodyRef = useRef(null);
   useEffect(() => {
@@ -27,6 +28,25 @@ export default function Library({
       <div className="kv-article-list-panel" style={{ width: 380, flexShrink: 0, background: 'var(--surface)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ padding: '1.2rem 1.2rem 0.8rem', borderBottom: '1px solid var(--border)' }}>
           <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-strong)', marginBottom: '0.7rem' }}>記事</div>
+          {remoteLinked && (
+            <div style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.7rem', background: 'var(--slate-100)', borderRadius: 8, padding: 3 }}>
+              {[{ id: 'local', label: 'ローカル', icon: 'bi-hdd-fill' }, { id: 'remote', label: 'サーバー', icon: 'bi-hdd-network-fill' }].map((opt) => (
+                <div
+                  key={opt.id}
+                  onClick={() => onSwitchDataSource?.(opt.id)}
+                  style={{
+                    flex: 1, textAlign: 'center', padding: '0.35rem 0.4rem', borderRadius: 6, cursor: 'pointer',
+                    fontSize: '0.76rem', fontWeight: 700,
+                    background: dataSource === opt.id ? 'var(--surface)' : 'transparent',
+                    color: dataSource === opt.id ? 'var(--text-strong)' : 'var(--text-muted)',
+                    boxShadow: dataSource === opt.id ? 'var(--shadow-sm)' : 'none',
+                  }}
+                >
+                  <i className={`bi ${opt.icon}`} style={{ marginRight: 5 }} />{opt.label}
+                </div>
+              ))}
+            </div>
+          )}
           <SearchBox placeholder="記事を検索..." value={query} onChange={onQueryChange} height={36} style={{ width: '100%' }} />
           {activeTag && (
             <div style={{ marginTop: '0.7rem' }}>
