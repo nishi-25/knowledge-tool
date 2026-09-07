@@ -526,6 +526,13 @@ function SupportRequestsCard({ onChanged }) {
   );
 }
 
+const NOTIFICATION_ITEMS = [
+  { key: 'accountRegistered', label: 'アカウント登録通知', description: '新規アカウント登録が完了したときに、ユーザー本人へ送信します' },
+  { key: 'memberApproved', label: 'プロジェクト参加承認通知', description: 'プロジェクトへの参加申請が承認されたときに、ユーザー本人へ送信します' },
+  { key: 'passwordReset', label: 'パスワードリセット完了通知', description: '仮パスワードから新しいパスワードへの変更が完了したときに、ユーザー本人へ送信します' },
+  { key: 'articleCreated', label: '記事作成通知', description: 'プロジェクトに新しい記事が作成されたときに、作成者以外のメンバーへ送信します' },
+];
+
 function EmailSettingsCard() {
   const [cfg, setCfg] = useState(null);
   const [error, setError] = useState('');
@@ -538,6 +545,7 @@ function EmailSettingsCard() {
   useEffect(() => { refresh(); }, []);
 
   const set = (key) => (value) => setCfg((prev) => ({ ...prev, [key]: value }));
+  const setNotification = (key) => (value) => setCfg((prev) => ({ ...prev, notifications: { ...prev.notifications, [key]: value } }));
 
   const save = async () => {
     setError(''); setSuccess('');
@@ -567,11 +575,11 @@ function EmailSettingsCard() {
   };
 
   if (!cfg) {
-    return <Card title="メール設定" icon="envelope-gear"><div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>読み込み中...</div></Card>;
+    return <Card title="メール設定" icon="envelope-at"><div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>読み込み中...</div></Card>;
   }
 
   return (
-    <Card title="メール設定" icon="envelope-gear" style={{ marginBottom: '1.2rem' }}>
+    <Card title="メール設定" icon="envelope-at" style={{ marginBottom: '1.2rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.2rem', paddingBottom: '1.2rem', borderBottom: '1px solid var(--border)' }}>
         <Switch checked={!!cfg.enabled} onChange={set('enabled')} />
         <div>
@@ -594,9 +602,22 @@ function EmailSettingsCard() {
         <Input label="送信者名" value={cfg.fromName} onChange={set('fromName')} height={38} />
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.4rem' }}>
         <input type="checkbox" checked={!!cfg.useTls} onChange={(e) => set('useTls')(e.target.checked)} id="use-tls" />
         <label htmlFor="use-tls" style={{ fontSize: '0.85rem' }}>TLSを使用する（STARTTLS）</label>
+      </div>
+
+      <div style={{ paddingTop: '1.2rem', borderTop: '1px solid var(--border)', marginBottom: '1rem' }}>
+        <div style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.9rem' }}>通知の種類</div>
+        {NOTIFICATION_ITEMS.map((item) => (
+          <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.6rem 0', borderBottom: '1px solid var(--border)' }}>
+            <Switch checked={cfg.notifications?.[item.key] ?? true} onChange={setNotification(item.key)} />
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{item.label}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.description}</div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {error && <div style={{ fontSize: '0.8rem', color: '#dc2626', marginBottom: '1rem' }}>{error}</div>}
@@ -621,7 +642,7 @@ const TABS = [
   { key: 'users', label: 'ユーザー管理', icon: 'people' },
   { key: 'projects', label: 'プロジェクト管理', icon: 'collection' },
   { key: 'support', label: 'サポート依頼', icon: 'exclamation-triangle' },
-  { key: 'email', label: 'メール設定', icon: 'envelope-gear' },
+  { key: 'email', label: 'メール設定', icon: 'envelope-at' },
 ];
 
 export default function AdminApp() {

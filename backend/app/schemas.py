@@ -146,6 +146,13 @@ class AdminBulkIdsIn(BaseModel):
     ids: list[str]
 
 
+class AdminEmailNotificationsIn(BaseModel):
+    accountRegistered: bool = True
+    memberApproved: bool = True
+    passwordReset: bool = True
+    articleCreated: bool = True
+
+
 class AdminEmailSettingsIn(BaseModel):
     enabled: bool = False
     smtpHost: str = ""
@@ -155,6 +162,7 @@ class AdminEmailSettingsIn(BaseModel):
     useTls: bool = True
     fromAddress: str = ""
     fromName: str = ""
+    notifications: AdminEmailNotificationsIn = AdminEmailNotificationsIn()
 
 
 class AdminEmailTestIn(BaseModel):

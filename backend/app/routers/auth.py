@@ -15,6 +15,7 @@ from ..auth import (
 )
 from ..schemas import SignupIn, LoginIn, SetNewPasswordIn
 from ..admin_store import is_login_enabled
+from ..email_utils import send_notification_if_enabled
 from ..rate_limit import enforce_rate_limit
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -64,6 +65,12 @@ def signup(payload: SignupIn, request: Request, response: Response):
         "createdAt": datetime.now(timezone.utc).isoformat(),
     }
     users_store.write(user_id, user)
+    send_notification_if_enabled(
+        "accountRegistered",
+        email,
+        "【Knowledge View】アカウント登録が完了しました",
+        f'{user["displayName"]} 様\n\nKnowledge Viewへのアカウント登録が完了しました。\nログイン後、プロジェクトを作成・参加してご利用いただけます。',
+    )
     token = _set_session_cookie(response, user_id)
     return {**public_user(user), "token": token}
 
@@ -101,4 +108,10 @@ def set_new_password(payload: SetNewPasswordIn, user: dict = Depends(get_current
     user["passwordHash"] = hash_password(payload.newPassword)
     user["mustChangePassword"] = False
     users_store.write(user["id"], user)
+    send_notification_if_enabled(
+        "passwordReset",
+        user["email"],
+        "【Knowledge View】パスワードが変更されました",
+        f'{user["displayName"]} 様\n\nアカウントのパスワードが変更されました。\n心当たりがない場合は、管理者にご連絡ください。',
+    )
     return {"ok": True}

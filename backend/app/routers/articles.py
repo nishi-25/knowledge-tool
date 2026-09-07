@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from ..schemas import ArticleIn
 from ..store import get_articles_store, strip_html, next_article_id
-from ..auth import get_current_user
+from ..auth import get_current_user, users_store
+from ..email_utils import send_notification_if_enabled
 from ..membership import resolve_current_project, require_owner
 from ..html_sanitize import sanitize_body_html
 
@@ -56,6 +57,20 @@ def create_article(payload: ArticleIn, user: dict = Depends(get_current_user)):
         "bodyHtml": safe_body_html,
     }
     articles_store.write(str(article["id"]), article)
+
+    for m in project.get("members", []):
+        if m.get("status") != "approved" or m["userId"] == user["id"]:
+            continue
+        member_user = users_store.read(m["userId"])
+        if not member_user:
+            continue
+        send_notification_if_enabled(
+            "articleCreated",
+            member_user["email"],
+            f'【Knowledge View】新しい記事が作成されました：{article["title"]}',
+            f'{member_user["displayName"]} 様\n\n「{project["name"]}」に新しい記事が作成されました。\n\nタイトル：{article["title"]}\n作成者：{user["displayName"]}',
+        )
+
     return article
 
 

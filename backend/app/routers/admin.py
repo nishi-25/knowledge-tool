@@ -18,7 +18,7 @@ from ..admin_store import (
 from ..auth import create_session_token, find_user_by_email, hash_password, users_store, verify_password, verify_session_token
 from ..config import APP_MODE
 from ..email_settings import get_email_config, save_email_config
-from ..email_utils import EmailDisabledError, EmailNotConfiguredError, send_email, send_test_email, try_send_notification
+from ..email_utils import EmailDisabledError, EmailNotConfiguredError, send_email, send_notification_if_enabled, send_test_email
 from ..membership import get_member, owner_count
 from ..rate_limit import enforce_rate_limit
 from ..schemas import (
@@ -379,7 +379,8 @@ def admin_approve_member(project_id: str, user_id: str, _: None = Depends(get_cu
     projects_index_store.write(project_id, project)
     approved_user = users_store.read(user_id)
     if approved_user:
-        try_send_notification(
+        send_notification_if_enabled(
+            "memberApproved",
             approved_user["email"],
             f'【Knowledge View】「{project["name"]}」への参加が承認されました',
             f'{approved_user["displayName"]} 様\n\n「{project["name"]}」への参加申請が承認されました。\nアプリからログインしてご利用ください。',
@@ -526,6 +527,7 @@ def update_email_settings(payload: AdminEmailSettingsIn, _: None = Depends(get_c
     cfg["useTls"] = payload.useTls
     cfg["fromAddress"] = payload.fromAddress.strip()
     cfg["fromName"] = payload.fromName.strip()
+    cfg["notifications"] = payload.notifications.model_dump()
     save_email_config(cfg)
     return {"ok": True}
 

@@ -50,3 +50,17 @@ def try_send_notification(to_email: str, subject: str, body: str) -> None:
         send_email(to_email, subject, body)
     except Exception:
         pass
+
+
+def send_notification_if_enabled(notification_key: str, to_email: str, subject: str, body: str) -> None:
+    """通知の種類ごとのON/OFF設定を確認したうえで送る「送れたら送る」通知。
+    メール機能自体が無効、またはこの種類の通知がOFFの場合は何もしない。失敗しても呼び出し元は止めない。"""
+    cfg = get_email_config()
+    if not cfg.get("enabled"):
+        return
+    if not cfg.get("notifications", {}).get(notification_key, True):
+        return
+    try:
+        send_email(to_email, subject, body)
+    except Exception:
+        pass
