@@ -10,7 +10,14 @@ app = FastAPI(title="Knowledge View API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    # サーバー版のWeb UIはnginx経由の同一オリジンでしか呼ばれないためCORSは不要。
+    # クロスオリジンで呼ぶ唯一の正規のブラウザ発ホストはデスクトップ版のElectron
+    # シェル（"サーバーとの連携"、"接続テストする"、内蔵バックエンドへの直接呼び出し）
+    # が使う app:// スキームのみ。allow_origins=["*"] を allow_credentials=True と
+    # 組み合わせると、Cookieセッションを持つ利用者が悪意あるWebサイトを開いただけで
+    # そのサイトのJSからこのAPIへ資格情報付きでアクセスされ、データを読み書きされて
+    # しまう（外部APIキーを使うcurl/スクリプト等はそもそもCORSの対象外なので影響なし）。
+    allow_origins=["app://app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
