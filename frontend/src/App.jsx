@@ -48,6 +48,7 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [activeFolder, setActiveFolder] = useState('');
   const [activeTag, setActiveTag] = useState(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [editorState, setEditorState] = useState(null);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [namePrompt, setNamePrompt] = useState(null);
@@ -66,6 +67,7 @@ export default function App() {
     setQuery('');
     setActiveFolder('');
     setActiveTag(null);
+    setShowFavoritesOnly(false);
     setEditorState(null);
   };
 
@@ -138,10 +140,11 @@ export default function App() {
   }, [articles, curArticle]);
 
   const goHome = () => setView('home');
-  const openLibrary = () => { setView('library'); setQuery(''); setActiveTag(null); };
+  const openLibrary = () => { setView('library'); setQuery(''); setActiveTag(null); setShowFavoritesOnly(false); };
   const goOrganize = () => setView('organize');
-  const openFolderView = (id) => { setView('library'); setQuery(''); setActiveFolder(id); setActiveTag(null); };
-  const openTagView = (tag) => { setView('library'); setActiveTag(tag); setActiveFolder(''); };
+  const openFolderView = (id) => { setView('library'); setQuery(''); setActiveFolder(id); setActiveTag(null); setShowFavoritesOnly(false); };
+  const openTagView = (tag) => { setView('library'); setActiveTag(tag); setActiveFolder(''); setShowFavoritesOnly(false); };
+  const openFavoritesView = () => { setShowFavoritesOnly(true); setQuery(''); setActiveTag(null); };
 
   const toggleFavorite = async (id) => {
     const updated = await api.toggleFavorite(id);
@@ -392,6 +395,9 @@ export default function App() {
           onDeleteFolder={deleteFolder}
           onNewArticle={startNewArticle}
           onDeleteArticle={deleteArticle}
+          showFavoritesOnly={showFavoritesOnly}
+          onShowFavorites={openFavoritesView}
+          onClearFavorites={() => setShowFavoritesOnly(false)}
         />
       )}
 

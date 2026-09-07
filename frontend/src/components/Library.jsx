@@ -12,13 +12,15 @@ export default function Library({
   filteredArticles, selectedId, onSelectArticle, current, relatedArticles,
   onToggleFavorite, onEditCurrent, onOpenArticle, isOwner, currentUser,
   activeFolder, onNewFolder, onRenameFolder, onDeleteFolder, onNewArticle, onDeleteArticle,
+  showFavoritesOnly, onShowFavorites, onClearFavorites,
 }) {
   const bodyRef = useRef(null);
   useEffect(() => {
     renderMermaidIn(bodyRef.current);
   }, [current?.id, current?.bodyHtml]);
 
-  const showFlatList = Boolean(query.trim()) || Boolean(activeTag);
+  const showFlatList = Boolean(query.trim()) || Boolean(activeTag) || showFavoritesOnly;
+  const listedArticles = showFavoritesOnly ? articles.filter((a) => a.favorite) : filteredArticles;
 
   return (
     <>
@@ -34,10 +36,18 @@ export default function Library({
               </span>
             </div>
           )}
+          {showFavoritesOnly && (
+            <div style={{ marginTop: '0.7rem' }}>
+              <span className="kv-chip on" style={{ fontSize: '0.72rem', fontWeight: 600, padding: '0.28em 0.65em', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: '0.4em' }}>
+                <i className="bi bi-star-fill" style={{ color: '#f59e0b' }} />お気に入り
+                <i className="bi bi-x" onClick={onClearFavorites} style={{ cursor: 'pointer' }} />
+              </span>
+            </div>
+          )}
         </div>
         {showFlatList ? (
           <div style={{ flex: 1, overflowY: 'auto' }}>
-            {filteredArticles.map((a) => {
+            {listedArticles.map((a) => {
               const fm = folderMeta(folders, a.folder);
               return (
                 <div key={a.id} onClick={() => onSelectArticle(a.id)} className={`kv-list-row${a.id === selectedId ? ' active' : ''}`} style={{ padding: '0.85rem 1.2rem' }}>
@@ -51,10 +61,12 @@ export default function Library({
                 </div>
               );
             })}
-            {filteredArticles.length === 0 && (
+            {listedArticles.length === 0 && (
               <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)' }}>
-                <i className="bi bi-search" style={{ fontSize: '1.6rem', opacity: 0.4 }} />
-                <div style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>該当する記事がありません</div>
+                <i className={`bi bi-${showFavoritesOnly ? 'star' : 'search'}`} style={{ fontSize: '1.6rem', opacity: 0.4 }} />
+                <div style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                  {showFavoritesOnly ? 'お気に入りの記事はまだありません' : '該当する記事がありません'}
+                </div>
               </div>
             )}
           </div>
@@ -71,6 +83,7 @@ export default function Library({
             onDeleteFolder={onDeleteFolder}
             onNewArticle={onNewArticle}
             onDeleteArticle={onDeleteArticle}
+            onShowFavorites={onShowFavorites}
           />
         )}
       </div>

@@ -4,7 +4,7 @@ import ContextMenu from './ui/ContextMenu.jsx';
 
 export default function ArticleTree({
   articles, folders, activeFolder, selectedId, onSelectArticle, isOwner,
-  onNewFolder, onRenameFolder, onDeleteFolder, onNewArticle, onDeleteArticle,
+  onNewFolder, onRenameFolder, onDeleteFolder, onNewArticle, onDeleteArticle, onShowFavorites,
 }) {
   const [expanded, setExpanded] = useState(() => new Set());
   const [contextMenu, setContextMenu] = useState(null);
@@ -22,7 +22,6 @@ export default function ArticleTree({
     });
   };
 
-  const favoriteArticles = articles.filter((a) => a.favorite);
   const noFolderArticles = articles.filter((a) => !a.folder);
   const countFor = (folderId) => articles.filter((a) => a.folder === folderId).length;
 
@@ -71,8 +70,15 @@ export default function ArticleTree({
     <div style={{ flex: 1, overflowY: 'auto', padding: '0.6rem 0' }}>
       <div style={{ display: 'flex', alignItems: 'center', padding: '0.4rem 1.2rem 0.6rem' }}>
         <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>フォルダ</span>
+        <div
+          onClick={onShowFavorites}
+          title="お気に入りを表示"
+          style={{ marginLeft: 'auto', cursor: 'pointer', color: '#f59e0b', padding: '0.1rem 0.3rem', display: 'flex', alignItems: 'center' }}
+        >
+          <i className="bi bi-star-fill" />
+        </div>
         {isOwner && (
-          <div style={{ marginLeft: 'auto', position: 'relative' }}>
+          <div style={{ position: 'relative' }}>
             <div onClick={() => setPlusMenuOpen((v) => !v)} style={{ cursor: 'pointer', color: 'var(--primary-dark)', padding: '0.1rem 0.3rem' }}>
               <i className="bi bi-plus-lg" />
             </div>
@@ -92,21 +98,6 @@ export default function ArticleTree({
               </div>
             )}
           </div>
-        )}
-      </div>
-
-      {/* お気に入り（擬似フォルダ） */}
-      <div>
-        <div onClick={() => toggle('favorites')} className="kv-list-row" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.2rem', cursor: 'pointer' }}>
-          <i className={`bi bi-chevron-${expanded.has('favorites') ? 'down' : 'right'}`} style={{ fontSize: '0.68rem', color: 'var(--text-muted)', width: 12 }} />
-          <i className="bi bi-star-fill" style={{ color: '#f59e0b', fontSize: '0.85rem' }} />
-          <span style={{ flex: 1, fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-strong)' }}>お気に入り</span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>{favoriteArticles.length}</span>
-        </div>
-        {expanded.has('favorites') && (
-          favoriteArticles.length > 0
-            ? favoriteArticles.map((a) => <ArticleRow key={a.id} a={a} />)
-            : <div style={{ padding: '0.3rem 1.2rem 0.6rem', paddingLeft: 32, fontSize: '0.78rem', color: 'var(--text-muted)' }}>お気に入りの記事はありません</div>
         )}
       </div>
 
@@ -132,20 +123,18 @@ export default function ArticleTree({
         </div>
       ))}
 
-      {/* フォルダなし（擬似フォルダ） */}
-      <div>
-        <div onClick={() => toggle('no-folder')} className="kv-list-row" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.2rem', cursor: 'pointer' }}>
-          <i className={`bi bi-chevron-${expanded.has('no-folder') ? 'down' : 'right'}`} style={{ fontSize: '0.68rem', color: 'var(--text-muted)', width: 12 }} />
-          <i className="bi bi-folder" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }} />
-          <span style={{ flex: 1, fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-strong)' }}>フォルダなし</span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>{noFolderArticles.length}</span>
+      {/* フォルダなし（擬似フォルダ）: 未分類の記事があるときだけ表示する */}
+      {noFolderArticles.length > 0 && (
+        <div>
+          <div onClick={() => toggle('no-folder')} className="kv-list-row" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.2rem', cursor: 'pointer' }}>
+            <i className={`bi bi-chevron-${expanded.has('no-folder') ? 'down' : 'right'}`} style={{ fontSize: '0.68rem', color: 'var(--text-muted)', width: 12 }} />
+            <i className="bi bi-folder" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }} />
+            <span style={{ flex: 1, fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-strong)' }}>フォルダなし</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>{noFolderArticles.length}</span>
+          </div>
+          {expanded.has('no-folder') && noFolderArticles.map((a) => <ArticleRow key={a.id} a={a} />)}
         </div>
-        {expanded.has('no-folder') && (
-          noFolderArticles.length > 0
-            ? noFolderArticles.map((a) => <ArticleRow key={a.id} a={a} />)
-            : <div style={{ padding: '0.3rem 1.2rem 0.6rem', paddingLeft: 32, fontSize: '0.78rem', color: 'var(--text-muted)' }}>記事がありません</div>
-        )}
-      </div>
+      )}
 
       {contextMenu && <ContextMenu {...contextMenu} onClose={() => setContextMenu(null)} />}
     </div>
