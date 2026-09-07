@@ -55,6 +55,15 @@ export default function Settings({
         {isDesktopApp && <DesktopPortCard />}
         <DataIOCard projectName={projectName} isOwner={isOwner} onImported={onDataImported} />
         {isOwner && <ApiKeysCard />}
+
+        <Card title="アプリ情報" icon="info-circle" style={{ marginTop: '1.2rem' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            バージョン: <span style={{ fontWeight: 700, color: 'var(--text-strong)', fontFamily: 'ui-monospace, monospace' }}>{systemInfo?.version || '不明'}</span>
+            <span style={{ marginLeft: '0.6rem', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+              （{systemInfo?.mode === 'desktop' ? 'デスクトップ版' : 'サーバー版'}）
+            </span>
+          </div>
+        </Card>
       </div>
 
       <StorageChangeModal

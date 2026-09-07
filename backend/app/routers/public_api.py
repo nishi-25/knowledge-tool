@@ -6,6 +6,7 @@ from ..schemas import ArticleIn, FolderIn
 from ..store import get_articles_store, get_folders_store, get_tags_store, strip_html, next_article_id, slugify
 from ..apikeys_store import resolve_project_id_from_key
 from ..html_sanitize import sanitize_body_html
+from ..config import APP_MODE, APP_VERSION
 from .folders import DEFAULT_ICON, DEFAULT_COLOR, DEFAULT_TINT
 
 router = APIRouter(prefix="/api/v1", tags=["public-api"])
@@ -16,6 +17,12 @@ def require_api_key(x_api_key: str | None = Header(default=None, alias="X-API-Ke
     if not project_id:
         raise HTTPException(status_code=401, detail="APIキーが無効です。X-API-Keyヘッダーを確認してください")
     return project_id
+
+
+@router.get("/version")
+def get_version():
+    """インストールされているバージョンを確認する用のエンドポイント。APIキー不要。"""
+    return {"version": APP_VERSION, "mode": APP_MODE}
 
 
 # --- 記事 ----------------------------------------------------------------

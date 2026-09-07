@@ -112,6 +112,7 @@ curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" -H "Content-Type: application/json
 | POST | `/api/v1/folders` | フォルダを作成 |
 | DELETE | `/api/v1/folders/{id}` | フォルダを削除 |
 | GET | `/api/v1/tags` | タグ一覧を取得 |
+| GET | `/api/v1/version` | インストールされているバージョンを取得（APIキー不要） |
 
 APIキーは1つのプロジェクトに紐づき、そのプロジェクトの記事・フォルダのみ操作できます。
 
