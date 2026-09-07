@@ -1,21 +1,28 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
 from ..schemas import ArticleIn, FolderIn
 from ..store import get_articles_store, get_folders_store, get_tags_store, strip_html, next_article_id, slugify
 from ..apikeys_store import resolve_project_id_from_key
 from ..html_sanitize import sanitize_body_html
 from ..config import APP_MODE, APP_VERSION
+from ..rate_limit import enforce_rate_limit
 from .folders import DEFAULT_ICON, DEFAULT_COLOR, DEFAULT_TINT
 
 router = APIRouter(prefix="/api/v1", tags=["public-api"])
 
 
-def require_api_key(x_api_key: str | None = Header(default=None, alias="X-API-Key")) -> str:
+def require_api_key(request: Request, x_api_key: str | None = Header(default=None, alias="X-API-Key")) -> str:
     project_id = resolve_project_id_from_key(x_api_key or "")
     if not project_id:
+        # 無効なキーでの連打（総当たり・スパム）をIP単位で抑止する。
+        enforce_rate_limit(request, "public-api-invalid-key", max_attempts=20, window_seconds=60)
         raise HTTPException(status_code=401, detail="APIキーが無効です。X-API-Keyヘッダーを確認してください")
+    # 有効なキー（＝プロジェクト）単位でレート制限する。同一IP配下に複数の正規
+    # 利用者がいても公平に制限され、漏洩したキー1本が暴走した場合の影響も
+    # そのキーが属するプロジェクトに閉じ込められる。
+    enforce_rate_limit(request, "public-api", max_attempts=120, window_seconds=60, identity=project_id)
     return project_id
 
 

@@ -114,7 +114,7 @@ curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" -H "Content-Type: application/json
 | GET | `/api/v1/tags` | タグ一覧を取得 |
 | GET | `/api/v1/version` | インストールされているバージョンを取得（APIキー不要） |
 
-APIキーは1つのプロジェクトに紐づき、そのプロジェクトの記事・フォルダのみ操作できます。
+APIキーは1つのプロジェクトに紐づき、そのプロジェクトの記事・フォルダのみ操作できます。レート制限があり、1つのAPIキーにつき1分間に120リクエストを超えると `429 Too Many Requests` が返ります。
 
 ## バージョニング
 

@@ -24,8 +24,13 @@ def _client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
-def enforce_rate_limit(request: Request, key: str, max_attempts: int = 10, window_seconds: int = 60) -> None:
-    ip = _client_ip(request)
+def enforce_rate_limit(
+    request: Request, key: str, max_attempts: int = 10, window_seconds: int = 60, identity: str | None = None,
+) -> None:
+    # identityを指定すると、IPアドレスではなくその値（APIキーのハッシュ等）で
+    # バケットを分ける。共有インフラ（同一IPから複数の正規利用者が呼ぶ場合等）でも
+    # 公平に制限したい場合に使う。
+    ip = identity or _client_ip(request)
     bucket_key = f"{key}:{ip}"
     now = time.monotonic()
     with _lock:
