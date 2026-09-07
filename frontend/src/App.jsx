@@ -490,6 +490,7 @@ export default function App() {
           onSwitchProject={openProjectSwitcher}
           onServerLinked={handleServerLinked}
           onServerUnlinked={handleServerUnlinked}
+          onDataImported={() => Promise.all([refreshArticles(), refreshFolders(), refreshTags()])}
         />
       )}
 

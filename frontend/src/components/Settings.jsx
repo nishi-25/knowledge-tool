@@ -4,10 +4,11 @@ import Button from './ui/Button.jsx';
 import StorageChangeModal from './StorageChangeModal.jsx';
 import MembersCard from './MembersCard.jsx';
 import ServerLinkCard from './ServerLinkCard.jsx';
+import DataIOCard from './DataIOCard.jsx';
 
 export default function Settings({
   projectName, currentStorage, resolvedPath, systemInfo, isOwner, currentUserId, isDesktopApp,
-  onSwitchProject, onChangeStorage, onServerLinked, onServerUnlinked,
+  onSwitchProject, onChangeStorage, onServerLinked, onServerUnlinked, onDataImported,
 }) {
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -49,6 +50,7 @@ export default function Settings({
 
         {isOwner && systemInfo?.mode !== 'desktop' && <MembersCard currentUserId={currentUserId} />}
         {isDesktopApp && <ServerLinkCard onLinked={onServerLinked} onUnlinked={onServerUnlinked} />}
+        <DataIOCard projectName={projectName} isOwner={isOwner} onImported={onDataImported} />
       </div>
 
       <StorageChangeModal

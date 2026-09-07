@@ -172,6 +172,11 @@ export const api = {
   deleteArticle: (id) => request(`/articles/${id}`, { method: 'DELETE' }),
   toggleFavorite: (id) => request(`/articles/${id}/favorite`, { method: 'POST' }),
 
+  exportProject: () => request('/export/project'),
+  exportArticle: (id) => request(`/export/articles/${id}`),
+  importProject: (data) => request('/import/project', { method: 'POST', body: JSON.stringify(data) }),
+  importArticle: (data) => request('/import/article', { method: 'POST', body: JSON.stringify(data) }),
+
   runOcr: () => request('/tools/ocr', { method: 'POST' }),
   runOrganize: (keywords) => request('/tools/organize', { method: 'POST', body: JSON.stringify({ keywords }) }),
 

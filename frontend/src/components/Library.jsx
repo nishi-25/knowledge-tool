@@ -3,9 +3,10 @@ import SearchBox from './ui/SearchBox.jsx';
 import Button from './ui/Button.jsx';
 import CommentThread from './CommentThread.jsx';
 import ArticleTree from './ArticleTree.jsx';
-import { fmtDate, folderMeta } from '../utils.js';
+import { fmtDate, folderMeta, downloadJson } from '../utils.js';
 import { renderMermaidIn } from '../mermaidUtils.js';
 import { sanitizeArticleHtml } from '../sanitizeHtml.js';
+import { api } from '../api.js';
 
 export default function Library({
   query, onQueryChange, activeTag, onClearTag, folders, articles,
@@ -119,6 +120,15 @@ export default function Library({
               <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
                 <Button size="sm" variant="ghost" icon={current.favorite ? 'star-fill' : 'star'} onClick={() => onToggleFavorite(current.id)}>
                   {current.favorite ? 'お気に入り済み' : 'お気に入り'}
+                </Button>
+                <Button
+                  size="sm" variant="ghost" icon="download"
+                  onClick={async () => {
+                    const data = await api.exportArticle(current.id);
+                    downloadJson(data, `${current.title || 'article'}.knowledge-view.json`);
+                  }}
+                >
+                  エクスポート
                 </Button>
                 {isOwner && <Button size="sm" variant="outline" icon="pencil" onClick={onEditCurrent}>編集</Button>}
                 {isOwner && (
