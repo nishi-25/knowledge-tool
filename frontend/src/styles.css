@@ -195,6 +195,27 @@ button, input, textarea, select { font-family: var(--font-sans); }
 .kv-readonly [data-kv-add-col],
 .kv-readonly [data-kv-edit-diagram] { display: none !important; }
 
+/* カレンダーブロック: 日付セルのクリックで強調表示（編集画面のみ操作可能） */
+[data-kv-block="calendar"] td[data-kv-day]:hover { background: var(--slate-100); }
+[data-kv-block="calendar"] td[data-kv-day].kv-day-selected,
+[data-kv-block="calendar"] td[data-kv-day].kv-day-selected:hover { background: var(--primary); color: #fff; font-weight: 700; border-radius: 6px; }
+.kv-readonly [data-kv-block="calendar"] td[data-kv-day] { cursor: default; }
+.kv-readonly [data-kv-block="calendar"] td[data-kv-day]:hover { background: none; }
+
+/* 展開ブロック（details/summary）: ネイティブの三角マーカーを消し、独自の矢印アイコンを回転させる */
+[data-kv-block="expand"] > summary { list-style: none; }
+[data-kv-block="expand"] > summary::-webkit-details-marker { display: none; }
+[data-kv-block="expand"] > summary i.bi-chevron-right { transition: transform 0.15s ease; display: inline-block; }
+[data-kv-block="expand"][open] > summary i.bi-chevron-right { transform: rotate(90deg); }
+.kv-readonly [data-kv-block="expand"] [data-kv-remove] { display: none !important; }
+
+/* 本文への日付挿入バッジ */
+.kv-inline-date {
+  display: inline-flex; align-items: center; gap: 0.3em; padding: 0.15em 0.65em; margin: 0 0.05em;
+  border-radius: 999px; background: var(--note-bg); color: var(--primary-dark); font-weight: 600;
+  font-size: 0.9em; vertical-align: middle; white-space: nowrap;
+}
+
 /* Color picker popover trigger */
 .kv-color-dot { width: 16px; height: 3px; border-radius: 2px; margin-top: 1px; }
 .kv-color-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 1px solid var(--border-strong); }

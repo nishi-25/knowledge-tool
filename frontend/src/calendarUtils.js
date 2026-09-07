@@ -20,7 +20,10 @@ export function calendarHtml(year, month) {
     .map((d) => `<th style="padding:0.4rem;background:var(--slate-100);border:1px solid var(--border);font-size:0.72rem;color:var(--text-muted);">${d}</th>`)
     .join('');
   const bodyRows = weeks
-    .map((week) => `<tr>${week.map((d) => `<td style="padding:0.5rem;border:1px solid var(--border);text-align:center;font-size:0.82rem;color:${d ? 'var(--text-body)' : 'var(--slate-300)'};">${d || ''}</td>`).join('')}</tr>`)
+    .map((week) => `<tr>${week.map((d) => (d
+      ? `<td data-kv-day="${d}" style="padding:0.5rem;border:1px solid var(--border);text-align:center;font-size:0.82rem;color:var(--text-body);cursor:pointer;">${d}</td>`
+      : `<td style="padding:0.5rem;border:1px solid var(--border);text-align:center;font-size:0.82rem;color:var(--slate-300);"></td>`
+    )).join('')}</tr>`)
     .join('');
 
   return (

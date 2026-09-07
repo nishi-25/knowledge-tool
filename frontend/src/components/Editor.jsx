@@ -8,6 +8,7 @@ import DiagramModal from './DiagramModal.jsx';
 import TextEmbedModal from './TextEmbedModal.jsx';
 import VideoEmbedModal from './VideoEmbedModal.jsx';
 import CalendarModal from './CalendarModal.jsx';
+import DatePickerModal from './DatePickerModal.jsx';
 import { api } from '../api.js';
 import { calloutMeta, calloutVariants, escapeHtmlAttr } from '../utils.js';
 import { sanitizeArticleHtml } from '../sanitizeHtml.js';
@@ -88,6 +89,23 @@ function sectionDividerHtml() {
   );
 }
 
+function dateInlineHtml(label) {
+  return `<span class="kv-inline-date" contenteditable="false"><i class="bi bi-calendar-event"></i>${label}</span>&nbsp;`;
+}
+
+function expandHtml() {
+  return (
+    `<details data-kv-block="expand" style="border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;margin:0.8rem 0;background:var(--surface);">` +
+    `<summary style="cursor:pointer;font-weight:700;color:var(--text-strong);display:flex;align-items:center;gap:0.5rem;">` +
+    `<i class="bi bi-chevron-right" contenteditable="false"></i>` +
+    `<span style="flex:1;">クリックして展開</span>` +
+    `<span data-kv-remove contenteditable="false" title="削除" style="cursor:pointer;color:var(--text-muted);font-size:0.8rem;flex-shrink:0;"><i class="bi bi-x-lg"></i></span>` +
+    `</summary>` +
+    `<div style="margin-top:0.7rem;padding-top:0.7rem;border-top:1px solid var(--border);font-size:0.9rem;line-height:1.7;">ここに内容を入力してください</div>` +
+    `</details><p><br></p>`
+  );
+}
+
 export default function Editor({ initialDraft, initialTags, folders, allTags, onCancel, onSave }) {
   const bodyEditRef = useRef(null);
   const savedRangeRef = useRef(null);
@@ -109,6 +127,7 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
   const [htmlModalOpen, setHtmlModalOpen] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
+  const [datePickerModalOpen, setDatePickerModalOpen] = useState(false);
 
   useEffect(() => {
     if (bodyEditRef.current) {
@@ -230,6 +249,11 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
     if (editDiagram) {
       const block = editDiagram.closest('[data-kv-block="diagram"]');
       if (block) openDiagramModal(block);
+      return;
+    }
+    const dayCell = e.target.closest('[data-kv-day]');
+    if (dayCell && dayCell.closest('[data-kv-block="calendar"]')) {
+      dayCell.classList.toggle('kv-day-selected');
     }
   };
 
@@ -312,6 +336,8 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
         { key: 'diagram', icon: 'bi bi-diagram-2', label: '図（フローチャート/UML/ER/ガント）', description: 'コードでも図でも編集できるMermaid図解を挿入します', run: () => openDiagramModal(null) },
         { key: 'image', icon: 'bi bi-image', label: '画像', description: '画像ファイルをアップロードして挿入します', run: () => triggerImageUpload() },
         { key: 'calendar', icon: 'bi bi-calendar3', label: 'カレンダー', description: '月表示のカレンダーを挿入します', run: () => setCalendarModalOpen(true) },
+        { key: 'date', icon: 'bi bi-calendar-date', label: '日時', description: 'カレンダーから選んだ日付を本文に追加します', run: () => setDatePickerModalOpen(true) },
+        { key: 'expand', icon: 'bi bi-chevron-bar-down', label: '展開', description: 'クリックすると内容が表示される折りたたみブロックを挿入します', run: () => insertHtmlAtCursor(expandHtml()) },
         { key: 'hr', icon: 'bi bi-hr', label: '水平ルーラー', description: '本文を区切る横線を挿入します', run: () => insertHtmlAtCursor(hrHtml()) },
         { key: 'section-divider', icon: 'bi bi-layout-text-sidebar-reverse', label: 'セクション区切り', description: 'ラベル付きの区切り線で本文をセクションに分けます', run: () => insertHtmlAtCursor(sectionDividerHtml()) },
       ],
@@ -501,6 +527,11 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
         open={calendarModalOpen}
         onClose={() => setCalendarModalOpen(false)}
         onSubmit={(html) => insertHtmlAtCursor(html)}
+      />
+      <DatePickerModal
+        open={datePickerModalOpen}
+        onClose={() => setDatePickerModalOpen(false)}
+        onSubmit={(label) => { insertHtmlAtCursor(dateInlineHtml(label)); setDatePickerModalOpen(false); }}
       />
     </div>
   );
