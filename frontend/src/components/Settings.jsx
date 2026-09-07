@@ -6,6 +6,7 @@ import MembersCard from './MembersCard.jsx';
 import ServerLinkCard from './ServerLinkCard.jsx';
 import DataIOCard from './DataIOCard.jsx';
 import ApiKeysCard from './ApiKeysCard.jsx';
+import DesktopPortCard from './DesktopPortCard.jsx';
 
 export default function Settings({
   projectName, currentStorage, resolvedPath, systemInfo, isOwner, currentUserId, isDesktopApp,
@@ -51,6 +52,7 @@ export default function Settings({
 
         {isOwner && systemInfo?.mode !== 'desktop' && <MembersCard currentUserId={currentUserId} />}
         {isDesktopApp && <ServerLinkCard onLinked={onServerLinked} onUnlinked={onServerUnlinked} />}
+        {isDesktopApp && <DesktopPortCard />}
         <DataIOCard projectName={projectName} isOwner={isOwner} onImported={onDataImported} />
         {isOwner && <ApiKeysCard />}
       </div>

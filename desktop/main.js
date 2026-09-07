@@ -4,8 +4,11 @@ const { spawn } = require('child_process');
 const http = require('http');
 const fs = require('fs');
 const url = require('url');
+const portConfig = require('./port-config');
 
-const KV_PORT = 8765;
+// アプリ起動時点で固定する。設定画面から変更した値は次回起動から反映される
+// （実行中のバックエンドを別ポートへ移し替えることはしない）。
+const KV_PORT = portConfig.getPort(app.getPath('userData'));
 const FRONTEND_SCHEME = 'app';
 let backendProcess = null;
 let backendReady = false;
@@ -157,6 +160,9 @@ async function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: false,
       nodeIntegration: false,
+      // preloadは`app`モジュールを使えないため、現在有効なポートを
+      // コマンドライン引数経由で渡す（preload.jsがprocess.argvから読む）。
+      additionalArguments: [`--kv-port=${KV_PORT}`],
     },
   });
   win.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
@@ -165,6 +171,16 @@ async function createWindow() {
   });
   win.loadURL(`${FRONTEND_SCHEME}://app/index.html`);
 }
+
+ipcMain.handle('kv:set-port', (_event, port) => {
+  portConfig.setPort(app.getPath('userData'), port);
+  return true;
+});
+
+ipcMain.handle('kv:relaunch', () => {
+  app.relaunch();
+  app.exit(0);
+});
 
 ipcMain.handle('kv:pick-folder', async () => {
   const win = BrowserWindow.getFocusedWindow();

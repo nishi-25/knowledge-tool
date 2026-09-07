@@ -1,6 +1,6 @@
 {
   "name": "knowledge-view-desktop",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "private": true,
   "description": "Knowledge View デスクトップ版",
   "author": {
@@ -30,6 +30,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "port-config.js",
       "package.json",
       "assets/icon.png"
     ],
