@@ -5,7 +5,7 @@ import Input from './ui/Input.jsx';
 import { api } from '../api.js';
 import { fmtDate } from '../utils.js';
 
-export default function ApiKeysCard() {
+export default function AccountApiKeysCard() {
   const apiBaseUrl = api.publicApiBaseUrl();
   const [keys, setKeys] = useState([]);
   const [labelDraft, setLabelDraft] = useState('');
@@ -13,13 +13,13 @@ export default function ApiKeysCard() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const refresh = async () => setKeys(await api.listApiKeys());
+  const refresh = async () => setKeys(await api.listAccountApiKeys());
   useEffect(() => { refresh(); }, []);
 
   const createKey = async () => {
     setLoading(true);
     try {
-      const result = await api.createApiKey(labelDraft.trim());
+      const result = await api.createAccountApiKey(labelDraft.trim());
       setNewKey(result);
       setLabelDraft('');
       await refresh();
@@ -29,8 +29,8 @@ export default function ApiKeysCard() {
   };
 
   const deleteKey = async (id) => {
-    if (!window.confirm('このAPIキーを失効させますか？このキーを使っている連携先は使えなくなります。')) return;
-    await api.deleteApiKey(id);
+    if (!window.confirm('このアカウントAPIキーを失効させますか？このキーを使っている連携先は使えなくなります。')) return;
+    await api.deleteAccountApiKey(id);
     if (newKey?.id === id) setNewKey(null);
     await refresh();
   };
@@ -46,11 +46,12 @@ export default function ApiKeysCard() {
   };
 
   return (
-    <Card title="外部APIキー（プロジェクト用）" icon="key-fill" style={{ marginTop: '1.2rem' }}>
+    <Card title="アカウントAPIキー" icon="person-badge" style={{ marginTop: '1.2rem' }}>
       <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1rem', lineHeight: 1.6 }}>
-        発行したAPIキーを使うと、このプロジェクトの記事・フォルダ・タグ・メンバー・コメント等を外部プログラムから操作できます。
-        リクエストヘッダーに <code style={{ background: 'var(--slate-100)', padding: '0.1em 0.4em', borderRadius: 4 }}>X-API-Key</code> を付けて
-        <code style={{ background: 'var(--slate-100)', padding: '0.1em 0.4em', borderRadius: 4, marginLeft: 4 }}>{apiBaseUrl}/v1/articles</code> 等にアクセスしてください。
+        このアカウントが所有する<strong>すべてのプロジェクト</strong>を横断して、一覧取得・新規作成・名称変更・削除ができる特別なキーです。
+        （現在のプロジェクトの記事・フォルダのみを操作する「外部APIキー」とは別の、より強い権限を持つキーです）
+        リクエストヘッダーに <code style={{ background: 'var(--slate-100)', padding: '0.1em 0.4em', borderRadius: 4 }}>X-Account-API-Key</code> を付けて
+        <code style={{ background: 'var(--slate-100)', padding: '0.1em 0.4em', borderRadius: 4, marginLeft: 4 }}>{apiBaseUrl}/v1/account/projects</code> 等にアクセスしてください。
       </div>
 
       {newKey && (
@@ -69,7 +70,7 @@ export default function ApiKeysCard() {
       )}
 
       <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-end', marginBottom: '1.2rem', flexWrap: 'wrap' }}>
-        <Input label="新しいキーのラベル" placeholder="例: AIエージェント用" value={labelDraft} onChange={setLabelDraft} height={36} style={{ maxWidth: 260 }} />
+        <Input label="新しいキーのラベル" placeholder="例: プロジェクト自動作成用" value={labelDraft} onChange={setLabelDraft} height={36} style={{ maxWidth: 260 }} />
         <Button size="sm" variant="primary" icon="plus-lg" disabled={loading} onClick={createKey}>発行する</Button>
       </div>
 
@@ -77,7 +78,7 @@ export default function ApiKeysCard() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
           {keys.map((k) => (
             <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.7rem', borderRadius: 8, background: 'var(--slate-50)' }}>
-              <i className="bi bi-key-fill" style={{ color: 'var(--text-muted)' }} />
+              <i className="bi bi-person-badge-fill" style={{ color: 'var(--text-muted)' }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-strong)' }}>{k.label}</div>
                 <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>

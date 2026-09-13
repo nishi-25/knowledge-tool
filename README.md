@@ -89,7 +89,10 @@ npm run dist
 
 ## 外部API
 
-設定画面の「外部APIキー」からAPIキーを発行すると、外部プログラム（AIエージェント等）から記事・フォルダの取得・追加・削除ができます。サーバー版・デスクトップ版どちらでも利用できます。
+外部プログラム（AIエージェント等）からアプリのほぼすべての機能を操作できます。サーバー版・デスクトップ版どちらでも利用できます。キーは2種類あります。
+
+- **プロジェクトAPIキー**（`X-API-Key`）：設定画面の「外部APIキー（プロジェクト用）」から発行。1つのプロジェクトに紐づき、そのプロジェクトの記事・フォルダ・タグ・コメント・メンバーのみ操作できます。
+- **アカウントAPIキー**（`X-Account-API-Key`）：設定画面の「アカウントAPIキー」から発行。自分が所有する全プロジェクトを横断して、プロジェクト自体の一覧取得・作成（ローカルストレージのみ）・名称変更・削除ができます。
 
 ```bash
 # 記事一覧を取得
@@ -99,6 +102,10 @@ curl -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/articles
 curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" -H "Content-Type: application/json" \
   https://your-server/api/v1/articles \
   -d '{"title": "タイトル", "folder": null, "tags": ["タグ1"], "bodyHtml": "<p>本文</p>"}'
+
+# プロジェクトを新規作成（アカウントAPIキー）
+curl -X POST -H "X-Account-API-Key: kv_acct_xxxxxxxx" -H "Content-Type: application/json" \
+  https://your-server/api/v1/account/projects -d '{"name": "新しいプロジェクト"}'
 ```
 
 | メソッド | パス | 内容 |
@@ -108,13 +115,26 @@ curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" -H "Content-Type: application/json
 | POST | `/api/v1/articles` | 記事を作成 |
 | PUT | `/api/v1/articles/{id}` | 記事を更新 |
 | DELETE | `/api/v1/articles/{id}` | 記事を削除 |
+| POST | `/api/v1/articles/{id}/favorite` | お気に入りを切り替え |
+| GET | `/api/v1/articles/{id}/revisions` | 変更履歴を取得 |
+| POST | `/api/v1/articles/{id}/revisions/{revisionId}/restore` | 指定した版に復元 |
 | GET | `/api/v1/folders` | フォルダ一覧を取得 |
 | POST | `/api/v1/folders` | フォルダを作成（`parent`に親フォルダのIDを指定するとサブフォルダになる） |
 | DELETE | `/api/v1/folders/{id}` | フォルダを削除 |
 | GET | `/api/v1/tags` | タグ一覧を取得 |
+| GET / POST | `/api/v1/articles/{id}/comments` | コメントの取得・追加 |
+| DELETE | `/api/v1/comments/{id}` | コメントを削除 |
+| GET | `/api/v1/members` | メンバー一覧を取得 |
+| GET | `/api/v1/members/requests` | 参加申請の一覧を取得 |
+| POST | `/api/v1/members/invite` | 招待リンク用トークンを発行・取得 |
+| POST | `/api/v1/members/{userId}/approve` \| `/reject` \| `/remove` \| `/promote` \| `/demote` | 参加申請の承認・却下、メンバーの削除・昇格・降格 |
 | GET | `/api/v1/version` | インストールされているバージョンを取得（APIキー不要） |
+| GET | `/api/v1/account/projects` | 所有プロジェクトの一覧を取得（アカウントAPIキー） |
+| POST | `/api/v1/account/projects` | プロジェクトを新規作成（アカウントAPIキー、ローカルストレージのみ） |
+| PUT | `/api/v1/account/projects/{id}` | プロジェクト名を変更（アカウントAPIキー） |
+| DELETE | `/api/v1/account/projects/{id}` | プロジェクトを削除（アカウントAPIキー、元に戻せません） |
 
-APIキーは1つのプロジェクトに紐づき、そのプロジェクトの記事・フォルダのみ操作できます。レート制限があり、1つのAPIキーにつき1分間に120リクエストを超えると `429 Too Many Requests` が返ります。
+各キーはそれぞれレート制限があり、1つのキーにつき1分間に120リクエストを超えると `429 Too Many Requests` が返ります。詳しい使い方・Python/JavaScriptのコード例は[取り扱い説明書](https://nishi-25.github.io/knowledge-tool/manual-integrations.html#api)をご覧ください。
 
 ## AI機能（OCR・整理）
 

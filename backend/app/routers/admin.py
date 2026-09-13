@@ -35,7 +35,7 @@ from ..schemas import (
     AdminSendEmailIn,
     AdminSetupIn,
 )
-from ..store import get_articles_store, get_comments_store, get_folders_store, get_tags_store, projects_index_store
+from ..store import delete_project_record, get_articles_store, get_comments_store, get_folders_store, get_tags_store, projects_index_store
 
 
 def _block_in_desktop_mode() -> None:
@@ -342,31 +342,16 @@ def rename_project(project_id: str, payload: AdminProjectUpdateIn, _: None = Dep
     return {"ok": True}
 
 
-def _delete_project_record(project_id: str) -> bool:
-    if projects_index_store.read(project_id) is None:
-        return False
-    for store in (
-        get_articles_store(project_id),
-        get_folders_store(project_id),
-        get_tags_store(project_id),
-        get_comments_store(project_id),
-    ):
-        for item in store.list():
-            store.delete(str(item["id"]))
-    projects_index_store.delete(project_id)
-    return True
-
-
 @router.delete("/projects/{project_id}")
 def delete_project(project_id: str, _: None = Depends(get_current_admin)):
-    if not _delete_project_record(project_id):
+    if not delete_project_record(project_id):
         raise HTTPException(status_code=404, detail="プロジェクトが見つかりません")
     return {"ok": True}
 
 
 @router.post("/projects/bulk-delete")
 def bulk_delete_projects(payload: AdminBulkIdsIn, _: None = Depends(get_current_admin)):
-    deleted_count = sum(1 for pid in payload.ids if _delete_project_record(pid))
+    deleted_count = sum(1 for pid in payload.ids if delete_project_record(pid))
     return {"deletedCount": deleted_count}
 
 

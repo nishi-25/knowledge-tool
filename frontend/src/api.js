@@ -199,6 +199,9 @@ export const api = {
   listApiKeys: () => request('/apikeys'),
   createApiKey: (label) => request('/apikeys', { method: 'POST', body: JSON.stringify({ label }) }),
   deleteApiKey: (id) => request(`/apikeys/${id}`, { method: 'DELETE' }),
+  listAccountApiKeys: () => request('/account-apikeys'),
+  createAccountApiKey: (label) => request('/account-apikeys', { method: 'POST', body: JSON.stringify({ label }) }),
+  deleteAccountApiKey: (id) => request(`/account-apikeys/${id}`, { method: 'DELETE' }),
 
   exportProject: () => request('/export/project'),
   exportArticle: (id) => request(`/export/articles/${id}`),

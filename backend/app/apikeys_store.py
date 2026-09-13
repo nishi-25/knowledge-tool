@@ -63,3 +63,59 @@ def resolve_project_id_from_key(raw_key: str) -> str | None:
         meta["lastUsedAt"] = datetime.now(timezone.utc).isoformat()
         proj_store.write(key_id, meta)
     return project_id
+
+
+# --- アカウントAPIキー（ユーザーに紐づき、そのユーザーが所有する全プロジェクトの
+# 作成・名称変更・削除を行える。プロジェクトAPIキーより強い権限のため別種として扱う）----
+
+_account_index_store = LocalFileStorage(LOCAL_ROOT / "account_api_keys_index")  # doc_id = sha256(raw key)
+
+
+def _account_keys_store(user_id: str):
+    return LocalFileStorage(LOCAL_ROOT / "users" / user_id / "apikeys")
+
+
+def create_account_api_key(user_id: str, label: str) -> tuple[str, dict]:
+    raw_key = "kv_acct_" + secrets.token_urlsafe(24)
+    key_hash = _hash_key(raw_key)
+    key_id = secrets.token_hex(8)
+    now = datetime.now(timezone.utc).isoformat()
+    meta = {"id": key_id, "label": label.strip() or "無題のAPIキー", "createdAt": now, "lastUsedAt": None}
+    _account_keys_store(user_id).write(key_id, {**meta, "keyHash": key_hash})
+    _account_index_store.write(key_hash, {"userId": user_id, "keyId": key_id})
+    return raw_key, meta
+
+
+def list_account_api_keys(user_id: str) -> list[dict]:
+    items = _account_keys_store(user_id).list()
+    return sorted(
+        [{"id": i["id"], "label": i["label"], "createdAt": i["createdAt"], "lastUsedAt": i.get("lastUsedAt")} for i in items],
+        key=lambda i: i["createdAt"],
+        reverse=True,
+    )
+
+
+def revoke_account_api_key(user_id: str, key_id: str) -> bool:
+    store = _account_keys_store(user_id)
+    meta = store.read(key_id)
+    if meta is None:
+        return False
+    _account_index_store.delete(meta["keyHash"])
+    store.delete(key_id)
+    return True
+
+
+def resolve_user_id_from_account_key(raw_key: str) -> str | None:
+    if not raw_key:
+        return None
+    entry = _account_index_store.read(_hash_key(raw_key))
+    if entry is None:
+        return None
+    user_id = entry["userId"]
+    key_id = entry["keyId"]
+    acct_store = _account_keys_store(user_id)
+    meta = acct_store.read(key_id)
+    if meta is not None:
+        meta["lastUsedAt"] = datetime.now(timezone.utc).isoformat()
+        acct_store.write(key_id, meta)
+    return user_id

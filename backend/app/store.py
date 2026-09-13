@@ -71,3 +71,21 @@ def get_article_revisions_store(project_id: str):
 def next_article_id(articles_store) -> int:
     ids = [int(a["id"]) for a in articles_store.list()] or [0]
     return max(ids) + 1
+
+
+def delete_project_record(project_id: str) -> bool:
+    """プロジェクトとその配下の全データ（記事・フォルダ・タグ・コメント・変更履歴）を削除する。
+    管理者パネル・オーナー向けの内部API・外部API（アカウントAPIキー）から共通で使う。"""
+    if projects_index_store.read(project_id) is None:
+        return False
+    for store in (
+        get_articles_store(project_id),
+        get_folders_store(project_id),
+        get_tags_store(project_id),
+        get_comments_store(project_id),
+        get_article_revisions_store(project_id),
+    ):
+        for item in store.list():
+            store.delete(str(item["id"]))
+    projects_index_store.delete(project_id)
+    return True

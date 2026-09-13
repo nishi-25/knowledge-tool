@@ -70,17 +70,23 @@
 
     <section class="manual-section" id="api">
       <h2>外部API</h2>
-      <p class="lead">外部プログラムから記事・フォルダを取得・追加・削除できるAPIです（サーバー版・デスクトップ版共通）。AIエージェントからの読み書きや、他システムとの連携にご利用いただけます。</p>
+      <p class="lead">外部プログラムからほぼすべてのアプリの機能（記事・フォルダ・タグ・コメント・メンバー・プロジェクト自体）を操作できるAPIです（サーバー版・デスクトップ版共通）。AIエージェントからの読み書きや、他システムとの連携にご利用いただけます。</p>
 
-      <h3>APIキーの発行</h3>
-      <p>「設定」画面の「外部APIキー」から発行できます（プロジェクトのオーナーのみ）。発行直後の1回だけキーの全文が表示されるので、必ずその場でコピーして安全な場所に保管してください。不要になったキーはいつでも失効できます。</p>
+      <div class="tip-box">💡 APIキーには2種類あります。<strong>プロジェクトAPIキー</strong>は1つのプロジェクトの中の記事・フォルダ・タグ・コメント・メンバーだけを操作できます。<strong>アカウントAPIキー</strong>はあなたが所有する全プロジェクトを横断して、プロジェクト自体の一覧取得・作成・名称変更・削除ができる、より強い権限のキーです。用途に応じて使い分けてください。</div>
+
+      <h3>プロジェクトAPIキーの発行</h3>
+      <p>「設定」画面の「外部APIキー（プロジェクト用）」から発行できます（プロジェクトのオーナーのみ）。発行直後の1回だけキーの全文が表示されるので、必ずその場でコピーして安全な場所に保管してください。不要になったキーはいつでも失効できます。</p>
       <div class="warn-box">⚠️ APIキーはそのキーを発行したプロジェクトのデータにのみアクセスできます。他人と共有しないでください。</div>
       <p>レート制限があり、1つのAPIキーにつき1分間に120リクエストを超えると <code>429 Too Many Requests</code> が返ります。</p>
 
-      <h3>使い方</h3>
-      <p>リクエストヘッダーに <code>X-API-Key</code> を付けてアクセスします。デスクトップ版の場合は、設定画面の「サーバーとの連携」や「外部APIキー」に表示されているアドレス（例: <code>http://127.0.0.1:8765/api</code>）を <code>https://your-server</code> の代わりに使ってください。</p>
+      <h3>アカウントAPIキーの発行</h3>
+      <p>「設定」画面の「アカウントAPIキー」から発行できます（プロジェクトのオーナーでなくても、自分のアカウントであれば発行できます）。こちらもプロジェクトAPIキーと同様、発行直後のみキー全文が表示されます。</p>
+      <div class="warn-box">⚠️ アカウントAPIキーでのプロジェクト削除は元に戻せません。中の記事・フォルダ・コメント・変更履歴もすべて削除されます。取り扱いに特にご注意ください。また、新規作成できるのはローカルストレージのプロジェクトのみです（AWS S3等の外部ストレージを使う場合はアプリ画面から作成してください）。</div>
 
-      <h3>エンドポイント一覧</h3>
+      <h3>使い方</h3>
+      <p>プロジェクトAPIキーはリクエストヘッダーに <code>X-API-Key</code>、アカウントAPIキーは <code>X-Account-API-Key</code> を付けてアクセスします。デスクトップ版の場合は、設定画面の「サーバーとの連携」や「外部APIキー」に表示されているアドレス（例: <code>http://127.0.0.1:8765/api</code>）を <code>https://your-server</code> の代わりに使ってください。</p>
+
+      <h3>エンドポイント一覧（プロジェクトAPIキー / X-API-Key）</h3>
       <table class="role-table">
         <tr><th>メソッド</th><th>パス</th><th>内容</th></tr>
         <tr><td>GET</td><td><code>/api/v1/articles</code></td><td>記事一覧を取得</td></tr>
@@ -88,11 +94,34 @@
         <tr><td>POST</td><td><code>/api/v1/articles</code></td><td>記事を作成</td></tr>
         <tr><td>PUT</td><td><code>/api/v1/articles/{id}</code></td><td>記事を更新</td></tr>
         <tr><td>DELETE</td><td><code>/api/v1/articles/{id}</code></td><td>記事を削除</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/articles/{id}/favorite</code></td><td>記事のお気に入りを切り替え</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/articles/{id}/revisions</code></td><td>記事の変更履歴を取得</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/articles/{id}/revisions/{revisionId}/restore</code></td><td>指定した版に復元</td></tr>
         <tr><td>GET</td><td><code>/api/v1/folders</code></td><td>フォルダ一覧を取得</td></tr>
         <tr><td>POST</td><td><code>/api/v1/folders</code></td><td>フォルダを作成（<code>parent</code>に親フォルダのIDを指定するとサブフォルダになります）</td></tr>
         <tr><td>DELETE</td><td><code>/api/v1/folders/{id}</code></td><td>フォルダを削除</td></tr>
         <tr><td>GET</td><td><code>/api/v1/tags</code></td><td>タグ一覧を取得</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/articles/{id}/comments</code></td><td>記事のコメント一覧を取得</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/articles/{id}/comments</code></td><td>コメントを追加</td></tr>
+        <tr><td>DELETE</td><td><code>/api/v1/comments/{id}</code></td><td>コメントを削除</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/members</code></td><td>メンバー一覧を取得</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/members/requests</code></td><td>参加申請（承認待ち）の一覧を取得</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/members/invite</code></td><td>招待リンク用トークンを発行・取得</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/members/{userId}/approve</code></td><td>参加申請を承認</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/members/{userId}/reject</code></td><td>参加申請を却下</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/members/{userId}/remove</code></td><td>メンバーを削除</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/members/{userId}/promote</code></td><td>メンバーをオーナーに昇格</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/members/{userId}/demote</code></td><td>オーナーをメンバーに降格</td></tr>
         <tr><td>GET</td><td><code>/api/v1/version</code></td><td>インストールされているバージョンを取得（APIキー不要）</td></tr>
+      </table>
+
+      <h3>エンドポイント一覧（アカウントAPIキー / X-Account-API-Key）</h3>
+      <table class="role-table">
+        <tr><th>メソッド</th><th>パス</th><th>内容</th></tr>
+        <tr><td>GET</td><td><code>/api/v1/account/projects</code></td><td>自分が所有するプロジェクトの一覧を取得</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/account/projects</code></td><td>プロジェクトを新規作成（ローカルストレージのみ）</td></tr>
+        <tr><td>PUT</td><td><code>/api/v1/account/projects/{id}</code></td><td>プロジェクト名を変更</td></tr>
+        <tr><td>DELETE</td><td><code>/api/v1/account/projects/{id}</code></td><td>プロジェクトを削除（元に戻せません）</td></tr>
       </table>
 
       <h3>記事（Articles）</h3>
@@ -239,6 +268,74 @@ print(res.json())</pre>
 console.log(await res.json());</pre>
       </div>
 
+      <div class="endpoint-label"><span class="method post">POST</span><code>/api/v1/articles/{id}/favorite</code> — お気に入りを切り替え</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/articles/12/favorite</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.post(
+    "https://your-server/api/v1/articles/12/favorite",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/articles/12/favorite", {
+  method: "POST",
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+      <div class="tip-box">💡 呼び出すたびにON/OFFが切り替わります。既にお気に入り登録済みの記事に対して呼ぶと解除されます。</div>
+
+      <div class="endpoint-label"><span class="method get">GET</span><code>/api/v1/articles/{id}/revisions</code> — 変更履歴を取得</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/articles/12/revisions</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.get(
+    "https://your-server/api/v1/articles/12/revisions",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/articles/12/revisions", {
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method post">POST</span><code>/api/v1/articles/{id}/revisions/{revisionId}/restore</code> — 指定した版に復元</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" \
+  https://your-server/api/v1/articles/12/revisions/12_1735300000000/restore</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.post(
+    "https://your-server/api/v1/articles/12/revisions/12_1735300000000/restore",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch(
+  "https://your-server/api/v1/articles/12/revisions/12_1735300000000/restore",
+  { method: "POST", headers: { "X-API-Key": "kv_live_xxxxxxxx" } },
+);
+console.log(await res.json());</pre>
+      </div>
+      <div class="tip-box">💡 復元前の状態も自動的に新しい版として保存されるため、復元操作自体も取り消せます。<code>revisionId</code>は変更履歴の取得結果に含まれる<code>id</code>の値です。</div>
+
       <h3>フォルダ（Folders）</h3>
 
       <div class="endpoint-label"><span class="method get">GET</span><code>/api/v1/folders</code> — フォルダ一覧を取得</div>
@@ -337,6 +434,364 @@ print(res.json())</pre>
 console.log(await res.json());</pre>
       </div>
       <div class="tip-box">💡 タグは記事の <code>tags</code> フィールド経由で追加・削除されます（記事の作成・更新時に指定したタグが自動的にタグ一覧に反映されます）。タグ単体を作成・削除するエンドポイントはありません。</div>
+
+      <h3>コメント（Comments）</h3>
+
+      <div class="endpoint-label"><span class="method get">GET</span><code>/api/v1/articles/{id}/comments</code> — コメント一覧を取得</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/articles/12/comments</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.get(
+    "https://your-server/api/v1/articles/12/comments",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/articles/12/comments", {
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method post">POST</span><code>/api/v1/articles/{id}/comments</code> — コメントを追加</div>
+      <p><code>author</code>は省略可能です（省略時は「外部API」として記録されます）。</p>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" -H "Content-Type: application/json" \
+  https://your-server/api/v1/articles/12/comments \
+  -d '{"text": "コメント本文", "author": "自動化Bot"}'</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.post(
+    "https://your-server/api/v1/articles/12/comments",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+    json={"text": "コメント本文", "author": "自動化Bot"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/articles/12/comments", {
+  method: "POST",
+  headers: {
+    "X-API-Key": "kv_live_xxxxxxxx",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ text: "コメント本文", author: "自動化Bot" }),
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method delete">DELETE</span><code>/api/v1/comments/{id}</code> — コメントを削除</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X DELETE -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/comments/abcdef1234567890</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.delete(
+    "https://your-server/api/v1/comments/abcdef1234567890",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/comments/abcdef1234567890", {
+  method: "DELETE",
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <h3>メンバー管理（Members）</h3>
+
+      <div class="endpoint-label"><span class="method get">GET</span><code>/api/v1/members</code> — メンバー一覧を取得</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/members</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.get(
+    "https://your-server/api/v1/members",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/members", {
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method get">GET</span><code>/api/v1/members/requests</code> — 参加申請（承認待ち）の一覧を取得</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/members/requests</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.get(
+    "https://your-server/api/v1/members/requests",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/members/requests", {
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method post">POST</span><code>/api/v1/members/invite</code> — 招待リンク用トークンを発行・取得</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/members/invite</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.post(
+    "https://your-server/api/v1/members/invite",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/members/invite", {
+  method: "POST",
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+      <div class="tip-box">💡 招待URLは <code>https://your-server/join/&lt;プロジェクトID&gt;?token=&lt;取得したtoken&gt;</code> の形になります。</div>
+
+      <div class="endpoint-label"><span class="method post">POST</span><code>/api/v1/members/{userId}/approve</code> — 参加申請を承認</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/members/abcdef123456/approve</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.post(
+    "https://your-server/api/v1/members/abcdef123456/approve",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/members/abcdef123456/approve", {
+  method: "POST",
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method post">POST</span><code>/api/v1/members/{userId}/reject</code> — 参加申請を却下</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/members/abcdef123456/reject</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.post(
+    "https://your-server/api/v1/members/abcdef123456/reject",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/members/abcdef123456/reject", {
+  method: "POST",
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method post">POST</span><code>/api/v1/members/{userId}/remove</code> — メンバーを削除</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/members/abcdef123456/remove</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.post(
+    "https://your-server/api/v1/members/abcdef123456/remove",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/members/abcdef123456/remove", {
+  method: "POST",
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method post">POST</span><code>/api/v1/members/{userId}/promote</code> — オーナーに昇格</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/members/abcdef123456/promote</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.post(
+    "https://your-server/api/v1/members/abcdef123456/promote",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/members/abcdef123456/promote", {
+  method: "POST",
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method post">POST</span><code>/api/v1/members/{userId}/demote</code> — メンバーに降格</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/members/abcdef123456/demote</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.post(
+    "https://your-server/api/v1/members/abcdef123456/demote",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/members/abcdef123456/demote", {
+  method: "POST",
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+      <div class="tip-box">💡 最後の1人のオーナーを降格・削除することはできません（プロジェクトの管理者が誰もいなくなるのを防ぐためです）。</div>
+
+      <h3>アカウントAPIキー：プロジェクト管理</h3>
+      <p>ここから先は <code>X-API-Key</code> ではなく <code>X-Account-API-Key</code> ヘッダーを使います。</p>
+
+      <div class="endpoint-label"><span class="method get">GET</span><code>/api/v1/account/projects</code> — 所有プロジェクトの一覧を取得</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -H "X-Account-API-Key: kv_acct_xxxxxxxx" https://your-server/api/v1/account/projects</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.get(
+    "https://your-server/api/v1/account/projects",
+    headers={"X-Account-API-Key": "kv_acct_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/account/projects", {
+  headers: { "X-Account-API-Key": "kv_acct_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method post">POST</span><code>/api/v1/account/projects</code> — プロジェクトを新規作成</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X POST -H "X-Account-API-Key: kv_acct_xxxxxxxx" -H "Content-Type: application/json" \
+  https://your-server/api/v1/account/projects \
+  -d '{"name": "新しいプロジェクト"}'</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.post(
+    "https://your-server/api/v1/account/projects",
+    headers={"X-Account-API-Key": "kv_acct_xxxxxxxx"},
+    json={"name": "新しいプロジェクト"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/account/projects", {
+  method: "POST",
+  headers: {
+    "X-Account-API-Key": "kv_acct_xxxxxxxx",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ name: "新しいプロジェクト" }),
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method put">PUT</span><code>/api/v1/account/projects/{id}</code> — プロジェクト名を変更</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X PUT -H "X-Account-API-Key: kv_acct_xxxxxxxx" -H "Content-Type: application/json" \
+  https://your-server/api/v1/account/projects/my-project \
+  -d '{"name": "新しい名前"}'</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.put(
+    "https://your-server/api/v1/account/projects/my-project",
+    headers={"X-Account-API-Key": "kv_acct_xxxxxxxx"},
+    json={"name": "新しい名前"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/account/projects/my-project", {
+  method: "PUT",
+  headers: {
+    "X-Account-API-Key": "kv_acct_xxxxxxxx",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ name: "新しい名前" }),
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method delete">DELETE</span><code>/api/v1/account/projects/{id}</code> — プロジェクトを削除</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X DELETE -H "X-Account-API-Key: kv_acct_xxxxxxxx" https://your-server/api/v1/account/projects/my-project</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.delete(
+    "https://your-server/api/v1/account/projects/my-project",
+    headers={"X-Account-API-Key": "kv_acct_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/account/projects/my-project", {
+  method: "DELETE",
+  headers: { "X-Account-API-Key": "kv_acct_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+      <div class="warn-box">⚠️ 削除すると中の記事・フォルダ・コメント・変更履歴もすべて完全に削除され、元に戻せません。</div>
 
       <h3>バージョン確認</h3>
 

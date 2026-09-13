@@ -46,6 +46,7 @@ app.include_router(ping.router)
 app.include_router(support.router)
 app.include_router(data_io.router)
 app.include_router(apikeys.router)
+app.include_router(apikeys.account_router)
 app.include_router(public_api.router)
 app.include_router(notifications.router)
 

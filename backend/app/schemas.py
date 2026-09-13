@@ -81,6 +81,19 @@ class ProjectCreateIn(BaseModel):
     storageConfig: StorageConfig
 
 
+class AccountProjectCreateIn(BaseModel):
+    name: str
+
+
+class ProjectRenameIn(BaseModel):
+    name: str
+
+
+class PublicCommentIn(BaseModel):
+    text: str
+    author: str = ""  # 空なら「外部API」として記録される
+
+
 class OrganizeIn(BaseModel):
     keywords: str
 

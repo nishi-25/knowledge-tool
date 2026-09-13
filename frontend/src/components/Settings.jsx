@@ -6,6 +6,7 @@ import MembersCard from './MembersCard.jsx';
 import ServerLinkCard from './ServerLinkCard.jsx';
 import DataIOCard from './DataIOCard.jsx';
 import ApiKeysCard from './ApiKeysCard.jsx';
+import AccountApiKeysCard from './AccountApiKeysCard.jsx';
 import DesktopPortCard from './DesktopPortCard.jsx';
 import AiSettingsCard from './AiSettingsCard.jsx';
 
@@ -107,6 +108,7 @@ export default function Settings({
           <>
             <DataIOCard projectName={projectName} isOwner={isOwner} onImported={onDataImported} />
             {isOwner && <ApiKeysCard />}
+            <AccountApiKeysCard />
           </>
         )}
 
