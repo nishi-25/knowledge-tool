@@ -78,12 +78,7 @@
       <p>レート制限があり、1つのAPIキーにつき1分間に120リクエストを超えると <code>429 Too Many Requests</code> が返ります。</p>
 
       <h3>使い方</h3>
-      <p>リクエストヘッダーに <code>X-API-Key</code> を付けてアクセスします。</p>
-      <pre class="code">curl -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/articles</pre>
-      <pre class="code">curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" -H "Content-Type: application/json" \
-  https://your-server/api/v1/articles \
-  -d '{"title": "タイトル", "folder": null, "tags": ["タグ1"], "bodyHtml": "&lt;p&gt;本文&lt;/p&gt;"}'</pre>
-      <p>デスクトップ版の場合は、設定画面の「サーバーとの連携」や「外部APIキー」に表示されているアドレス（例: <code>http://127.0.0.1:8765/api</code>）を使ってください。</p>
+      <p>リクエストヘッダーに <code>X-API-Key</code> を付けてアクセスします。デスクトップ版の場合は、設定画面の「サーバーとの連携」や「外部APIキー」に表示されているアドレス（例: <code>http://127.0.0.1:8765/api</code>）を <code>https://your-server</code> の代わりに使ってください。</p>
 
       <h3>エンドポイント一覧</h3>
       <table class="role-table">
@@ -99,6 +94,267 @@
         <tr><td>GET</td><td><code>/api/v1/tags</code></td><td>タグ一覧を取得</td></tr>
         <tr><td>GET</td><td><code>/api/v1/version</code></td><td>インストールされているバージョンを取得（APIキー不要）</td></tr>
       </table>
+
+      <h3>記事（Articles）</h3>
+
+      <div class="endpoint-label"><span class="method get">GET</span><code>/api/v1/articles</code> — 記事一覧を取得</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/articles</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.get(
+    "https://your-server/api/v1/articles",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/articles", {
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method get">GET</span><code>/api/v1/articles/{id}</code> — 記事を1件取得</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/articles/12</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.get(
+    "https://your-server/api/v1/articles/12",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/articles/12", {
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method post">POST</span><code>/api/v1/articles</code> — 記事を作成</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" -H "Content-Type: application/json" \
+  https://your-server/api/v1/articles \
+  -d '{"title": "タイトル", "folder": null, "tags": ["タグ1"], "bodyHtml": "&lt;p&gt;本文&lt;/p&gt;"}'</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.post(
+    "https://your-server/api/v1/articles",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+    json={
+        "title": "タイトル",
+        "folder": None,
+        "tags": ["タグ1"],
+        "bodyHtml": "&lt;p&gt;本文&lt;/p&gt;",
+    },
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/articles", {
+  method: "POST",
+  headers: {
+    "X-API-Key": "kv_live_xxxxxxxx",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    title: "タイトル",
+    folder: null,
+    tags: ["タグ1"],
+    bodyHtml: "&lt;p&gt;本文&lt;/p&gt;",
+  }),
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method put">PUT</span><code>/api/v1/articles/{id}</code> — 記事を更新</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X PUT -H "X-API-Key: kv_live_xxxxxxxx" -H "Content-Type: application/json" \
+  https://your-server/api/v1/articles/12 \
+  -d '{"title": "更新後のタイトル", "folder": null, "tags": ["タグ1"], "bodyHtml": "&lt;p&gt;更新後の本文&lt;/p&gt;"}'</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.put(
+    "https://your-server/api/v1/articles/12",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+    json={
+        "title": "更新後のタイトル",
+        "folder": None,
+        "tags": ["タグ1"],
+        "bodyHtml": "&lt;p&gt;更新後の本文&lt;/p&gt;",
+    },
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/articles/12", {
+  method: "PUT",
+  headers: {
+    "X-API-Key": "kv_live_xxxxxxxx",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    title: "更新後のタイトル",
+    folder: null,
+    tags: ["タグ1"],
+    bodyHtml: "&lt;p&gt;更新後の本文&lt;/p&gt;",
+  }),
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method delete">DELETE</span><code>/api/v1/articles/{id}</code> — 記事を削除</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X DELETE -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/articles/12</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.delete(
+    "https://your-server/api/v1/articles/12",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/articles/12", {
+  method: "DELETE",
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <h3>フォルダ（Folders）</h3>
+
+      <div class="endpoint-label"><span class="method get">GET</span><code>/api/v1/folders</code> — フォルダ一覧を取得</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/folders</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.get(
+    "https://your-server/api/v1/folders",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/folders", {
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method post">POST</span><code>/api/v1/folders</code> — フォルダを作成</div>
+      <p>トップレベルのフォルダは <code>parent</code> を <code>null</code> にします。既存フォルダのIDを指定するとそのサブフォルダになります。</p>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" -H "Content-Type: application/json" \
+  https://your-server/api/v1/folders \
+  -d '{"label": "フォルダ名", "parent": null}'</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.post(
+    "https://your-server/api/v1/folders",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+    json={"label": "フォルダ名", "parent": None},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/folders", {
+  method: "POST",
+  headers: {
+    "X-API-Key": "kv_live_xxxxxxxx",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ label: "フォルダ名", parent: null }),
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <div class="endpoint-label"><span class="method delete">DELETE</span><code>/api/v1/folders/{id}</code> — フォルダを削除</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -X DELETE -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/folders/my-folder</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.delete(
+    "https://your-server/api/v1/folders/my-folder",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/folders/my-folder", {
+  method: "DELETE",
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+
+      <h3>タグ（Tags）</h3>
+
+      <div class="endpoint-label"><span class="method get">GET</span><code>/api/v1/tags</code> — タグ一覧を取得</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/tags</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.get(
+    "https://your-server/api/v1/tags",
+    headers={"X-API-Key": "kv_live_xxxxxxxx"},
+)
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/tags", {
+  headers: { "X-API-Key": "kv_live_xxxxxxxx" },
+});
+console.log(await res.json());</pre>
+      </div>
+      <div class="tip-box">💡 タグは記事の <code>tags</code> フィールド経由で追加・削除されます（記事の作成・更新時に指定したタグが自動的にタグ一覧に反映されます）。タグ単体を作成・削除するエンドポイントはありません。</div>
+
+      <h3>バージョン確認</h3>
+
+      <div class="endpoint-label"><span class="method get">GET</span><code>/api/v1/version</code> — インストール済みバージョンを取得（APIキー不要）</div>
+      <div class="code-tabs">
+        <div class="code-tabs-nav">
+          <button type="button" class="code-tab-btn active" data-lang="curl">cURL</button>
+          <button type="button" class="code-tab-btn" data-lang="python">Python</button>
+          <button type="button" class="code-tab-btn" data-lang="js">JavaScript</button>
+        </div>
+        <pre class="code" data-lang="curl">curl https://your-server/api/v1/version</pre>
+        <pre class="code" data-lang="python" hidden>import requests
+
+res = requests.get("https://your-server/api/v1/version")
+print(res.json())</pre>
+        <pre class="code" data-lang="js" hidden>const res = await fetch("https://your-server/api/v1/version");
+console.log(await res.json());</pre>
+      </div>
     </section>
 
     <section class="manual-section" id="ai-features">

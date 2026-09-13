@@ -107,3 +107,18 @@
 
   updateCount();
 })();
+
+(function () {
+  document.querySelectorAll('.code-tabs').forEach((group) => {
+    const buttons = group.querySelectorAll('.code-tab-btn');
+    const blocks = group.querySelectorAll('pre.code');
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        buttons.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const lang = btn.dataset.lang;
+        blocks.forEach((block) => { block.hidden = block.dataset.lang !== lang; });
+      });
+    });
+  });
+})();
