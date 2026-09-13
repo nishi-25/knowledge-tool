@@ -33,6 +33,8 @@ def _export_article(a: dict, folder_labels: dict[str, str]) -> dict:
 
 
 def _resolve_or_create_folder(pid: str, label: str | None) -> str | None:
+    """記事のfolderフィールド（ラベル文字列1つ）の解決用。階層情報を持たないため、
+    同名フォルダがどこにあっても（トップレベルでもネストされていても）再利用する。"""
     if not label or not label.strip():
         return None
     label = label.strip()
@@ -44,9 +46,41 @@ def _resolve_or_create_folder(pid: str, label: str | None) -> str | None:
     folder_id = slugify(label, {f["id"] for f in existing})
     folders_store.write(folder_id, {
         "id": folder_id, "label": label, "icon": DEFAULT_ICON,
-        "color": DEFAULT_COLOR, "tint": DEFAULT_TINT, "builtin": False,
+        "color": DEFAULT_COLOR, "tint": DEFAULT_TINT, "builtin": False, "parent": None,
     })
     return folder_id
+
+
+def _import_folder_hierarchy(pid: str, folder_defs: list[dict]) -> None:
+    """プロジェクト全体エクスポートの folders（各要素が親をラベルで指す）を、
+    親子関係を保ったまま作成する。親が先に解決されるよう再帰的に処理し、
+    データ側に循環参照があってもトップレベル扱いにして無限再帰を防ぐ。"""
+    by_label = {(f.get("label") or "").strip(): f for f in folder_defs if (f.get("label") or "").strip()}
+    resolved: dict[str, str | None] = {}
+
+    def resolve(label: str, visiting: frozenset[str]) -> str | None:
+        if label in resolved:
+            return resolved[label]
+        if label in visiting:
+            return None
+        parent_label = (by_label.get(label, {}).get("parent") or "").strip() or None
+        parent_id = resolve(parent_label, visiting | {label}) if parent_label else None
+        folders_store = get_folders_store(pid)
+        existing = folders_store.list()
+        match = next((f for f in existing if f["label"] == label and f.get("parent") == parent_id), None)
+        if match:
+            resolved[label] = match["id"]
+            return match["id"]
+        folder_id = slugify(label, {f["id"] for f in existing})
+        folders_store.write(folder_id, {
+            "id": folder_id, "label": label, "icon": DEFAULT_ICON,
+            "color": DEFAULT_COLOR, "tint": DEFAULT_TINT, "builtin": False, "parent": parent_id,
+        })
+        resolved[label] = folder_id
+        return folder_id
+
+    for label in by_label:
+        resolve(label, frozenset())
 
 
 def _ensure_tags(pid: str, labels: list[str]) -> None:
@@ -104,7 +138,14 @@ def export_project(user: dict = Depends(get_current_user)):
         "version": EXPORT_VERSION,
         "exportedAt": datetime.now(timezone.utc).isoformat(),
         "project": {"name": project.get("name")},
-        "folders": [{"label": f["label"], "icon": f.get("icon"), "color": f.get("color"), "tint": f.get("tint")} for f in folders],
+        "folders": [
+            {
+                "label": f["label"],
+                "parent": folder_labels.get(f.get("parent")) if f.get("parent") else None,
+                "icon": f.get("icon"), "color": f.get("color"), "tint": f.get("tint"),
+            }
+            for f in folders
+        ],
         "tags": [{"label": t["label"]} for t in tags],
         "articles": [_export_article(a, folder_labels) for a in articles],
     }
@@ -147,10 +188,7 @@ def import_project(payload: ImportProjectIn, user: dict = Depends(get_current_us
     require_owner(project, user)
     pid = project["id"]
 
-    for f in payload.folders:
-        label = (f.get("label") or "").strip()
-        if label:
-            _resolve_or_create_folder(pid, label)
+    _import_folder_hierarchy(pid, payload.folders)
     _ensure_tags(pid, [t.get("label") for t in payload.tags if t.get("label")])
 
     imported = [_import_one_article(pid, item) for item in payload.articles]

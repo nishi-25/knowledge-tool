@@ -158,7 +158,7 @@ export const api = {
   createFsFolder: (path, name) => request('/fs/mkdir', { method: 'POST', body: JSON.stringify({ path, name }) }),
 
   getFolders: () => request('/folders'),
-  addFolder: (label) => request('/folders', { method: 'POST', body: JSON.stringify({ label }) }),
+  addFolder: (label, parent = null) => request('/folders', { method: 'POST', body: JSON.stringify({ label, parent }) }),
   renameFolder: (id, label) => request(`/folders/${id}`, { method: 'PUT', body: JSON.stringify({ label }) }),
   deleteFolder: (id) => request(`/folders/${id}`, { method: 'DELETE' }),
 

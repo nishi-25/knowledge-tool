@@ -208,18 +208,23 @@ export default function App() {
     setArticles((prev) => prev.map((a) => (a.id === id ? updated : a)));
   };
 
-  const addFolder = async (label) => setFolders(await api.addFolder(label));
+  const addFolder = async (label, parent = null) => setFolders(await api.addFolder(label, parent));
   const addTag = async (label) => setTags(await api.addTag(label));
 
   const openNewFolderPrompt = () => setNamePrompt({ mode: 'new-folder', title: '新規フォルダ', label: 'フォルダ名' });
+  const openNewSubfolderPrompt = (parentFolder) => setNamePrompt({
+    mode: 'new-subfolder', parentId: parentFolder.id, title: `「${parentFolder.label}」にサブフォルダを作成`, label: 'フォルダ名',
+  });
   const openNewTagPrompt = () => setNamePrompt({ mode: 'new-tag', title: '新規タグ', label: 'タグ名' });
   const openRenameFolderPrompt = (folder) => setNamePrompt({ mode: 'rename-folder', targetId: folder.id, initialValue: folder.label, title: 'フォルダ名を変更', label: 'フォルダ名' });
   const openRenameTagPrompt = (tag) => setNamePrompt({ mode: 'rename-tag', targetId: tag.id, initialValue: tag.label, title: 'タグ名を変更', label: 'タグ名' });
 
   const submitNamePrompt = async (value) => {
-    const { mode, targetId } = namePrompt;
+    const { mode, targetId, parentId } = namePrompt;
     if (mode === 'new-folder') {
       await addFolder(value);
+    } else if (mode === 'new-subfolder') {
+      await addFolder(value, parentId);
     } else if (mode === 'rename-folder') {
       await api.renameFolder(targetId, value);
       await Promise.all([refreshFolders(), refreshArticles()]);
@@ -448,6 +453,7 @@ export default function App() {
           isOwner={isOwner}
           currentUser={currentUser}
           onNewFolder={openNewFolderPrompt}
+          onNewSubfolder={openNewSubfolderPrompt}
           onRenameFolder={openRenameFolderPrompt}
           onDeleteFolder={deleteFolder}
           onNewArticle={startNewArticle}

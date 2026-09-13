@@ -28,10 +28,12 @@ class Folder(BaseModel):
     color: str
     tint: str
     builtin: bool = False
+    parent: Optional[str] = None
 
 
 class FolderIn(BaseModel):
     label: str
+    parent: Optional[str] = None
 
 
 class Tag(BaseModel):

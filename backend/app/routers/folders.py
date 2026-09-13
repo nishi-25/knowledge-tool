@@ -36,12 +36,15 @@ def add_folder(payload: FolderIn, user: dict = Depends(get_current_user)):
     if not label:
         return _with_counts(pid)
     existing = folders_store.list()
-    if any(f["label"] == label for f in existing):
+    parent = payload.parent or None
+    if parent is not None and not any(f["id"] == parent for f in existing):
+        raise HTTPException(status_code=404, detail="親フォルダが見つかりません")
+    if any(f["label"] == label and f.get("parent") == parent for f in existing):
         return _with_counts(pid)
     folder_id = slugify(label, {f["id"] for f in existing})
     folders_store.write(folder_id, {
         "id": folder_id, "label": label, "icon": DEFAULT_ICON,
-        "color": DEFAULT_COLOR, "tint": DEFAULT_TINT, "builtin": False,
+        "color": DEFAULT_COLOR, "tint": DEFAULT_TINT, "builtin": False, "parent": parent,
     })
     return _with_counts(pid)
 
@@ -69,13 +72,21 @@ def delete_folder(folder_id: str, user: dict = Depends(get_current_user)):
     require_owner(project, user)
     pid = project["id"]
     folders_store = get_folders_store(pid)
-    if folders_store.read(folder_id) is None:
+    target = folders_store.read(folder_id)
+    if target is None:
         raise HTTPException(status_code=404, detail="フォルダが見つかりません")
+    parent_of_deleted = target.get("parent")
     folders_store.delete(folder_id)
-    # このフォルダに属していた記事は「フォルダなし」に戻す（記事自体は削除しない）
+    # 子フォルダは削除せず、削除したフォルダの親へ繰り上げる（無ければ最上位へ）。
+    for f in folders_store.list():
+        if f.get("parent") == folder_id:
+            f["parent"] = parent_of_deleted
+            folders_store.write(f["id"], f)
+    # このフォルダ直下の記事も同様に、削除したフォルダの親へ繰り上げる
+    # （記事自体は削除しない）。
     articles_store = get_articles_store(pid)
     for a in articles_store.list():
         if a.get("folder") == folder_id:
-            a["folder"] = None
+            a["folder"] = parent_of_deleted
             articles_store.write(str(a["id"]), a)
     return _with_counts(pid)

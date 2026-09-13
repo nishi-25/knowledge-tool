@@ -4,7 +4,7 @@ import ContextMenu from './ui/ContextMenu.jsx';
 
 export default function ArticleTree({
   articles, folders, activeFolder, selectedId, onSelectArticle, isOwner,
-  onNewFolder, onRenameFolder, onDeleteFolder, onNewArticle, onDeleteArticle, onShowFavorites,
+  onNewFolder, onNewSubfolder, onRenameFolder, onDeleteFolder, onNewArticle, onDeleteArticle, onShowFavorites,
 }) {
   const [expanded, setExpanded] = useState(() => new Set());
   const [contextMenu, setContextMenu] = useState(null);
@@ -24,6 +24,7 @@ export default function ArticleTree({
 
   const noFolderArticles = articles.filter((a) => !a.folder);
   const countFor = (folderId) => articles.filter((a) => a.folder === folderId).length;
+  const childFoldersOf = (parentId) => folders.filter((f) => (f.parent || null) === parentId);
 
   const openFolderMenu = (e, folder) => {
     e.preventDefault();
@@ -31,9 +32,10 @@ export default function ArticleTree({
     setContextMenu({
       x: e.clientX, y: e.clientY,
       items: [
+        { icon: 'folder-plus', label: 'サブフォルダを作成', onClick: () => onNewSubfolder(folder) },
         { icon: 'pencil', label: '名前を変更', onClick: () => onRenameFolder(folder) },
         { icon: 'trash', label: '削除', danger: true, onClick: () => {
-          if (window.confirm(`「${folder.label}」を削除しますか？中の記事は「フォルダなし」に移動します。`)) onDeleteFolder(folder.id);
+          if (window.confirm(`「${folder.label}」を削除しますか？中の記事・サブフォルダは上の階層に移動します。`)) onDeleteFolder(folder.id);
         } },
       ],
     });
@@ -52,19 +54,49 @@ export default function ArticleTree({
     });
   };
 
-  const ArticleRow = ({ a, indent = 32 }) => (
+  const ArticleRow = ({ a, depth = 0 }) => (
     <div
       key={a.id}
       onClick={() => onSelectArticle(a.id)}
       onContextMenu={isOwner ? (e) => openArticleMenu(e, a) : undefined}
       className={`kv-list-row${a.id === selectedId ? ' active' : ''}`}
-      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 0.8rem 0.45rem', paddingLeft: indent, cursor: 'pointer' }}
+      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 0.8rem 0.45rem', paddingLeft: 32 + depth * 16, cursor: 'pointer' }}
     >
       <i className={`bi bi-${a.favorite ? 'star-fill' : 'file-earmark-text'}`} style={{ fontSize: '0.72rem', color: a.favorite ? '#f59e0b' : 'var(--text-muted)', flexShrink: 0 }} />
       <span className="kv-line-clamp-1" style={{ flex: 1, fontSize: '0.83rem', fontWeight: 600, color: 'var(--text-body)' }}>{a.title}</span>
       <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', flexShrink: 0 }}>{fmtDate(a.updated)}</span>
     </div>
   );
+
+  const FolderNode = ({ folder, depth = 0 }) => {
+    const children = childFoldersOf(folder.id);
+    const isExpanded = expanded.has(folder.id);
+    const directArticles = articles.filter((a) => a.folder === folder.id);
+    return (
+      <div key={folder.id}>
+        <div
+          onClick={() => toggle(folder.id)}
+          onContextMenu={isOwner ? (e) => openFolderMenu(e, folder) : undefined}
+          className="kv-list-row"
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.2rem', paddingLeft: `calc(1.2rem + ${depth * 16}px)`, cursor: 'pointer' }}
+        >
+          <i className={`bi bi-chevron-${isExpanded ? 'down' : 'right'}`} style={{ fontSize: '0.68rem', color: 'var(--text-muted)', width: 12 }} />
+          <i className={folder.icon} style={{ color: folder.color, fontSize: '0.85rem' }} />
+          <span style={{ flex: 1, fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-strong)' }}>{folder.label}</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>{countFor(folder.id)}</span>
+        </div>
+        {isExpanded && (
+          <>
+            {children.map((child) => <FolderNode key={child.id} folder={child} depth={depth + 1} />)}
+            {directArticles.map((a) => <ArticleRow key={a.id} a={a} depth={depth} />)}
+            {children.length === 0 && directArticles.length === 0 && (
+              <div style={{ padding: '0.3rem 1.2rem 0.6rem', paddingLeft: 32 + depth * 16, fontSize: '0.78rem', color: 'var(--text-muted)' }}>記事がありません</div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '0.6rem 0' }}>
@@ -101,27 +133,8 @@ export default function ArticleTree({
         )}
       </div>
 
-      {/* 実フォルダ */}
-      {folders.map((f) => (
-        <div key={f.id}>
-          <div
-            onClick={() => toggle(f.id)}
-            onContextMenu={isOwner ? (e) => openFolderMenu(e, f) : undefined}
-            className="kv-list-row"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.2rem', cursor: 'pointer' }}
-          >
-            <i className={`bi bi-chevron-${expanded.has(f.id) ? 'down' : 'right'}`} style={{ fontSize: '0.68rem', color: 'var(--text-muted)', width: 12 }} />
-            <i className={f.icon} style={{ color: f.color, fontSize: '0.85rem' }} />
-            <span style={{ flex: 1, fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-strong)' }}>{f.label}</span>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>{countFor(f.id)}</span>
-          </div>
-          {expanded.has(f.id) && (
-            countFor(f.id) > 0
-              ? articles.filter((a) => a.folder === f.id).map((a) => <ArticleRow key={a.id} a={a} />)
-              : <div style={{ padding: '0.3rem 1.2rem 0.6rem', paddingLeft: 32, fontSize: '0.78rem', color: 'var(--text-muted)' }}>記事がありません</div>
-          )}
-        </div>
-      ))}
+      {/* 実フォルダ（親を持たないものをルートとして、再帰的に描画） */}
+      {childFoldersOf(null).map((f) => <FolderNode key={f.id} folder={f} depth={0} />)}
 
       {/* フォルダなし（擬似フォルダ）: 未分類の記事があるときだけ表示する */}
       {noFolderArticles.length > 0 && (

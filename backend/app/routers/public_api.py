@@ -110,13 +110,16 @@ def create_folder(payload: FolderIn, project_id: str = Depends(require_api_key))
     if not label:
         raise HTTPException(status_code=400, detail="フォルダ名を入力してください")
     existing = folders_store.list()
-    match = next((f for f in existing if f["label"] == label), None)
+    parent = payload.parent or None
+    if parent is not None and not any(f["id"] == parent for f in existing):
+        raise HTTPException(status_code=404, detail="親フォルダが見つかりません")
+    match = next((f for f in existing if f["label"] == label and f.get("parent") == parent), None)
     if match:
         return match
     folder_id = slugify(label, {f["id"] for f in existing})
     folder = {
         "id": folder_id, "label": label, "icon": DEFAULT_ICON,
-        "color": DEFAULT_COLOR, "tint": DEFAULT_TINT, "builtin": False,
+        "color": DEFAULT_COLOR, "tint": DEFAULT_TINT, "builtin": False, "parent": parent,
     }
     folders_store.write(folder_id, folder)
     return folder
@@ -125,13 +128,20 @@ def create_folder(payload: FolderIn, project_id: str = Depends(require_api_key))
 @router.delete("/folders/{folder_id}")
 def delete_folder(folder_id: str, project_id: str = Depends(require_api_key)):
     folders_store = get_folders_store(project_id)
-    if folders_store.read(folder_id) is None:
+    target = folders_store.read(folder_id)
+    if target is None:
         raise HTTPException(status_code=404, detail="フォルダが見つかりません")
+    parent_of_deleted = target.get("parent")
     folders_store.delete(folder_id)
+    # 子フォルダは削除せず、削除したフォルダの親へ繰り上げる（無ければ最上位へ）。
+    for f in folders_store.list():
+        if f.get("parent") == folder_id:
+            f["parent"] = parent_of_deleted
+            folders_store.write(f["id"], f)
     articles_store = get_articles_store(project_id)
     for a in articles_store.list():
         if a.get("folder") == folder_id:
-            a["folder"] = None
+            a["folder"] = parent_of_deleted
             articles_store.write(str(a["id"]), a)
     return {"ok": True}
 

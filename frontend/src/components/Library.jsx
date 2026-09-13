@@ -12,7 +12,7 @@ export default function Library({
   query, onQueryChange, activeTag, onClearTag, folders, articles,
   filteredArticles, selectedId, onSelectArticle, current, relatedArticles,
   onToggleFavorite, onEditCurrent, onOpenArticle, isOwner, currentUser,
-  activeFolder, onNewFolder, onRenameFolder, onDeleteFolder, onNewArticle, onDeleteArticle,
+  activeFolder, onNewFolder, onNewSubfolder, onRenameFolder, onDeleteFolder, onNewArticle, onDeleteArticle,
   showFavoritesOnly, onShowFavorites, onClearFavorites,
   dataSource, remoteLinked, onSwitchDataSource,
 }) {
@@ -100,6 +100,7 @@ export default function Library({
             onSelectArticle={onSelectArticle}
             isOwner={isOwner}
             onNewFolder={onNewFolder}
+            onNewSubfolder={onNewSubfolder}
             onRenameFolder={onRenameFolder}
             onDeleteFolder={onDeleteFolder}
             onNewArticle={onNewArticle}

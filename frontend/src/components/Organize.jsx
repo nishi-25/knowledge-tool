@@ -21,6 +21,16 @@ export default function Organize({
     setNewTagName('');
   };
 
+  // フォルダは親子関係を保ったまま、親の直後に子が並ぶ順序にフラット化する
+  // （区分管理は簡易な一覧表示のため、インデントだけで階層を示す）。
+  const orderedFolders = [];
+  const appendChildren = (parentId, depth) => {
+    folders
+      .filter((f) => (f.parent || null) === parentId)
+      .forEach((f) => { orderedFolders.push({ ...f, depth }); appendChildren(f.id, depth + 1); });
+  };
+  appendChildren(null, 0);
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '2.4rem 3rem' }}>
       <div style={{ maxWidth: 820 }}>
@@ -29,8 +39,8 @@ export default function Organize({
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem', alignItems: 'start' }}>
           <Card title="フォルダ" icon="folder2-open">
-            {folders.map((f) => (
-              <div key={f.id} onClick={() => onOpenFolder(f.id)} className="kv-list-row" style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.65rem 0', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}>
+            {orderedFolders.map((f) => (
+              <div key={f.id} onClick={() => onOpenFolder(f.id)} className="kv-list-row" style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.65rem 0', paddingLeft: f.depth * 20, cursor: 'pointer', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ width: 34, height: 34, borderRadius: 10, background: f.tint, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <i className={f.icon} style={{ color: f.color }} />
                 </div>
@@ -47,7 +57,7 @@ export default function Organize({
                       className="bi bi-trash"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (window.confirm(`「${f.label}」を削除しますか？中の記事は「フォルダなし」に移動します。`)) onDeleteFolder(f.id);
+                        if (window.confirm(`「${f.label}」を削除しますか？中の記事・サブフォルダは上の階層に移動します。`)) onDeleteFolder(f.id);
                       }}
                       style={{ color: 'var(--danger)', fontSize: '0.82rem', cursor: 'pointer' }}
                     />

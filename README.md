@@ -109,7 +109,7 @@ curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" -H "Content-Type: application/json
 | PUT | `/api/v1/articles/{id}` | 記事を更新 |
 | DELETE | `/api/v1/articles/{id}` | 記事を削除 |
 | GET | `/api/v1/folders` | フォルダ一覧を取得 |
-| POST | `/api/v1/folders` | フォルダを作成 |
+| POST | `/api/v1/folders` | フォルダを作成（`parent`に親フォルダのIDを指定するとサブフォルダになる） |
 | DELETE | `/api/v1/folders/{id}` | フォルダを削除 |
 | GET | `/api/v1/tags` | タグ一覧を取得 |
 | GET | `/api/v1/version` | インストールされているバージョンを取得（APIキー不要） |
