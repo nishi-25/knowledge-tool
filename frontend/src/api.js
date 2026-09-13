@@ -186,8 +186,8 @@ export const api = {
   listRevisions: (articleId) => request(`/articles/${articleId}/revisions`),
   restoreRevision: (articleId, revisionId) => request(`/articles/${articleId}/revisions/${revisionId}/restore`, { method: 'POST' }),
 
-  updateAiConfig: (enabled, apiKey) => request('/projects/current/ai-config', { method: 'PUT', body: JSON.stringify({ enabled, apiKey }) }),
-  testAiKey: (apiKey = '') => request('/projects/current/ai-test', { method: 'POST', body: JSON.stringify({ apiKey }) }),
+  updateAiConfig: (enabled, provider, apiKey, baseUrl = '', model = '') => request('/projects/current/ai-config', { method: 'PUT', body: JSON.stringify({ enabled, provider, apiKey, baseUrl, model }) }),
+  testAiKey: (provider = '', apiKey = '', baseUrl = '', model = '') => request('/projects/current/ai-test', { method: 'POST', body: JSON.stringify({ provider, apiKey, baseUrl, model }) }),
 
   listNotifications: () => request('/notifications'),
   getUnreadNotificationCount: () => request('/notifications/unread-count'),

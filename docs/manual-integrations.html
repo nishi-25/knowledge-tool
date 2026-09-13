@@ -1,0 +1,133 @@
+<title>データ連携・API・AI機能 - Knowledge View マニュアル</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Knowledge ViewのJSONエクスポート/インポート、外部API、AIによるOCR・記事整理機能の設定方法を解説します。">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><text y=%2213%22 font-size=%2214%22>📘</text></svg>">
+
+<header class="site">
+  <div class="container nav">
+    <a href="index.html" style="display:flex;align-items:center;gap:0.7rem;text-decoration:none;">
+      <div class="logo">K</div>
+      <div class="brand">Knowledge<span> View.</span></div>
+    </a>
+    <nav class="links">
+      <a href="index.html">トップ</a>
+      <a href="index.html#desktop">ダウンロード</a>
+      <a href="https://github.com/nishi-25/knowledge-tool" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container">
+  <p class="manual-breadcrumb"><a href="manual.html">マニュアル</a> / データ連携・API・AI機能</p>
+</div>
+
+<div class="manual-hero container" style="padding-top:0.8rem;">
+  <h1 style="font-size:1.6rem;">🔌 データ連携・API・AI機能</h1>
+  <div class="manual-search">
+    <i class="manual-search-icon">🔍</i>
+    <input type="text" id="manual-search-input" placeholder="このページ内をキーワードで検索..." autocomplete="off">
+    <span id="manual-search-count"></span>
+    <button type="button" id="manual-search-prev" title="前へ" aria-label="前の一致へ">▲</button>
+    <button type="button" id="manual-search-next" title="次へ" aria-label="次の一致へ">▼</button>
+    <button type="button" id="manual-search-clear" title="クリア" aria-label="検索をクリア">✕</button>
+  </div>
+</div>
+
+<div class="container manual-shell">
+  <aside class="manual-sidebar">
+    <a class="category-link" href="manual-basics.html"><span class="icon">🚀</span>基本の使い方</a>
+    <a class="category-link" href="manual-team.html"><span class="icon">👥</span>チームで使う</a>
+    <a class="category-link" href="manual-admin.html"><span class="icon">🛠️</span>管理者パネル</a>
+    <a class="category-link" href="manual-desktop.html"><span class="icon">💻</span>デスクトップ版</a>
+    <a class="category-link active" href="manual-integrations.html"><span class="icon">🔌</span>データ連携・API・AI</a>
+    <div class="section-links">
+      <a href="#data-export">JSONエクスポート・インポート</a>
+      <a href="#api">外部API</a>
+      <a href="#ai-features">AI機能（OCR・整理）</a>
+    </div>
+    <a class="category-link" href="manual-faq.html"><span class="icon">❓</span>FAQ・その他</a>
+  </aside>
+
+  <div class="manual-content">
+
+    <section class="manual-section" id="data-export">
+      <h2>JSONエクスポート・インポート</h2>
+      <p class="lead">フォルダ・タグ・記事をJSON形式でエクスポート・インポートできます。バックアップのほか、AIツールへ読み込ませる用途にもご利用いただけます（サーバー版・デスクトップ版共通）。</p>
+
+      <h3>エクスポート</h3>
+      <ul>
+        <li><strong>プロジェクト全体</strong>：「設定」画面の「データのエクスポート・インポート」にある「プロジェクト全体をJSONでエクスポート」から、フォルダ・タグ・記事すべてを1つのJSONファイルとしてダウンロードできます。</li>
+        <li><strong>記事1件のみ</strong>：記事の閲覧画面にある「エクスポート」ボタンから、その記事だけをJSONファイルとしてダウンロードできます。</li>
+      </ul>
+      <p>エクスポートしたJSONには、本文のHTMLに加えてプレーンテキスト版（<code>bodyText</code>）も含まれており、AIツールに読み込ませる際にそのまま使いやすくなっています。</p>
+
+      <h3>インポート</h3>
+      <p>「設定」画面の「データのエクスポート・インポート」から、プロジェクト全体・記事1件単位のどちらのJSONファイルもインポートできます（プロジェクトのオーナーのみ）。</p>
+      <div class="tip-box">💡 インポートは既存の記事に追加される形で取り込まれます。フォルダ・タグは同名のものがあればそのまま使われ、無ければ新規作成されます。既存のデータが上書きされることはありません。</div>
+    </section>
+
+    <section class="manual-section" id="api">
+      <h2>外部API</h2>
+      <p class="lead">外部プログラムから記事・フォルダを取得・追加・削除できるAPIです（サーバー版・デスクトップ版共通）。AIエージェントからの読み書きや、他システムとの連携にご利用いただけます。</p>
+
+      <h3>APIキーの発行</h3>
+      <p>「設定」画面の「外部APIキー」から発行できます（プロジェクトのオーナーのみ）。発行直後の1回だけキーの全文が表示されるので、必ずその場でコピーして安全な場所に保管してください。不要になったキーはいつでも失効できます。</p>
+      <div class="warn-box">⚠️ APIキーはそのキーを発行したプロジェクトのデータにのみアクセスできます。他人と共有しないでください。</div>
+      <p>レート制限があり、1つのAPIキーにつき1分間に120リクエストを超えると <code>429 Too Many Requests</code> が返ります。</p>
+
+      <h3>使い方</h3>
+      <p>リクエストヘッダーに <code>X-API-Key</code> を付けてアクセスします。</p>
+      <pre class="code">curl -H "X-API-Key: kv_live_xxxxxxxx" https://your-server/api/v1/articles</pre>
+      <pre class="code">curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" -H "Content-Type: application/json" \
+  https://your-server/api/v1/articles \
+  -d '{"title": "タイトル", "folder": null, "tags": ["タグ1"], "bodyHtml": "&lt;p&gt;本文&lt;/p&gt;"}'</pre>
+      <p>デスクトップ版の場合は、設定画面の「サーバーとの連携」や「外部APIキー」に表示されているアドレス（例: <code>http://127.0.0.1:8765/api</code>）を使ってください。</p>
+
+      <h3>エンドポイント一覧</h3>
+      <table class="role-table">
+        <tr><th>メソッド</th><th>パス</th><th>内容</th></tr>
+        <tr><td>GET</td><td><code>/api/v1/articles</code></td><td>記事一覧を取得</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/articles/{id}</code></td><td>記事を1件取得</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/articles</code></td><td>記事を作成</td></tr>
+        <tr><td>PUT</td><td><code>/api/v1/articles/{id}</code></td><td>記事を更新</td></tr>
+        <tr><td>DELETE</td><td><code>/api/v1/articles/{id}</code></td><td>記事を削除</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/folders</code></td><td>フォルダ一覧を取得</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/folders</code></td><td>フォルダを作成（<code>parent</code>に親フォルダのIDを指定するとサブフォルダになります）</td></tr>
+        <tr><td>DELETE</td><td><code>/api/v1/folders/{id}</code></td><td>フォルダを削除</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/tags</code></td><td>タグ一覧を取得</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/version</code></td><td>インストールされているバージョンを取得（APIキー不要）</td></tr>
+      </table>
+    </section>
+
+    <section class="manual-section" id="ai-features">
+      <h2>AI機能（OCR・整理）</h2>
+      <p class="lead">エディタの「メモをOCRで読み込む」（画像から文字起こし）、「キーワードから整理」（タグ・見出し構成の提案）は、AIプロバイダーを設定しないと使えません。</p>
+
+      <h3>設定方法</h3>
+      <p>「設定」画面の「AI設定」カードから、使用するプロバイダーをプルダウンで選んで設定し、「接続テストする」で確認したうえで有効化して保存してください（プロジェクトのオーナーのみ設定できます）。</p>
+      <ul>
+        <li><strong>Anthropic Claude</strong>：<a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer">Anthropicのコンソール</a>で発行したAPIキーを入力します。</li>
+        <li><strong>OpenAI</strong>：<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">OpenAIのプラットフォーム</a>で発行したAPIキーを入力します。</li>
+        <li><strong>ローカルLLM</strong>：Ollamaなど、OpenAI互換のAPIを提供するローカルサーバーのURL（例: <code>http://localhost:11434/v1</code>）とモデル名を入力します。APIキーは多くの場合不要です。</li>
+      </ul>
+      <div class="tip-box">💡 未設定・無効のまま使おうとすると、エディタ側でその旨のメッセージが表示されます。エラーメッセージが出た場合は設定画面を確認してください。</div>
+      <div class="warn-box">⚠️ クラウド側のAPI（Anthropic・OpenAI）の利用には、各サービス側の料金が発生する場合があります。ご自身のアカウントの利用状況・料金プランをご確認ください。ローカルLLMを使う場合は、Knowledge Viewのサーバー（またはデスクトップ版が動作している端末）からそのURLに到達できる必要があります。</div>
+    </section>
+
+    <div class="manual-pager">
+      <a class="prev" href="manual-desktop.html"><div class="dir">← 前へ</div><div class="title">デスクトップ版</div></a>
+      <a class="next" href="manual-faq.html"><div class="dir">次へ →</div><div class="title">FAQ・その他</div></a>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <p><a href="https://github.com/nishi-25/knowledge-tool" target="_blank" rel="noopener">GitHub リポジトリ</a> ・ <a href="index.html">Knowledge View トップページ</a></p>
+  </div>
+</footer>
+
+<script src="manual.js"></script>

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from ..schemas import ProjectCreateIn, StorageConfig, AiConfigIn, AiTestIn
 from ..seed import STORAGE_OPTIONS
 from ..storage_factory import mask_storage_config, resolved_local_path, test_storage_config
-from ..ai_utils import test_ai_key
+from ..ai_utils import test_ai_connection
 from ..store import (
     projects_index_store,
     get_articles_store,
@@ -210,13 +210,20 @@ def get_storage_options():
 
 # --- AI設定（OCR・整理機能で使う） --------------------------------------------
 
+AI_PROVIDERS = {"claude", "openai", "local"}
+
+
 @router.put("/current/ai-config")
 def update_ai_config(payload: AiConfigIn, user: dict = Depends(get_current_user)):
     project = resolve_current_project(user)
     require_owner(project, user)
+    provider = payload.provider if payload.provider in AI_PROVIDERS else "claude"
     project["aiEnabled"] = payload.enabled
+    project["aiProvider"] = provider
     if payload.apiKey.strip():
         project["aiApiKey"] = payload.apiKey.strip()
+    project["aiBaseUrl"] = payload.baseUrl.strip()
+    project["aiModel"] = payload.model.strip()
     projects_index_store.write(project["id"], project)
     return _present_project(project, user)
 
@@ -224,10 +231,13 @@ def update_ai_config(payload: AiConfigIn, user: dict = Depends(get_current_user)
 @router.post("/current/ai-test")
 def ai_test(payload: AiTestIn, user: dict = Depends(get_current_user)):
     project = resolve_current_project(user)
+    provider = payload.provider if payload.provider in AI_PROVIDERS else (project.get("aiProvider") or "claude")
     api_key = payload.apiKey.strip() or project.get("aiApiKey", "")
-    if not api_key:
+    base_url = payload.baseUrl.strip() or project.get("aiBaseUrl", "")
+    model = payload.model.strip() or project.get("aiModel", "")
+    if provider in ("claude", "openai") and not api_key:
         return {"ok": False, "message": "APIキーを入力してください"}
-    ok, message = test_ai_key(api_key)
+    ok, message = test_ai_connection(provider, api_key, base_url, model)
     return {"ok": ok, "message": message}
 
 

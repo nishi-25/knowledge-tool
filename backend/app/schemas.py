@@ -92,11 +92,17 @@ class OcrIn(BaseModel):
 
 class AiConfigIn(BaseModel):
     enabled: bool = False
+    provider: str = "claude"  # claude | openai | local
     apiKey: str = ""  # 空文字は「変更しない」として扱う（enabledの切り替えだけしたい場合など）
+    baseUrl: str = ""  # ローカルLLM用。OpenAI互換エンドポイントのURL
+    model: str = ""  # 空ならプロバイダーごとの既定モデルを使用
 
 
 class AiTestIn(BaseModel):
+    provider: str = ""  # 空ならプロジェクトに保存済みの値を使う
     apiKey: str = ""  # 空ならプロジェクトに保存済みのキーで試す
+    baseUrl: str = ""
+    model: str = ""
 
 
 class Comment(BaseModel):
