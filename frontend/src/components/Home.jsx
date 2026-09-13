@@ -1,16 +1,40 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SearchBox from './ui/SearchBox.jsx';
 import { fmtDate, folderMeta } from '../utils.js';
+import { api } from '../api.js';
+
+function fmtRelative(iso) {
+  const diffMin = (Date.now() - new Date(iso).getTime()) / 60000;
+  if (diffMin < 1) return 'たった今';
+  if (diffMin < 60) return `${Math.floor(diffMin)}分前`;
+  if (diffMin < 1440) return `${Math.floor(diffMin / 60)}時間前`;
+  return `${Math.floor(diffMin / 1440)}日前`;
+}
 
 export default function Home({
-  articles, folders, tags, onOpenArticle, onToggleTagFilter, onOpenFolder, onSearchAll,
+  articles, folders, tags, currentProject, currentStorage,
+  onOpenArticle, onToggleTagFilter, onOpenFolder, onShowFavorites, onSearchAll,
 }) {
   const [searchText, setSearchText] = useState('');
+  const [recentComments, setRecentComments] = useState([]);
   const now = new Date();
   const recentCount = articles.filter((a) => (now - new Date(a.updated)) / 86400000 <= 7).length;
 
+  useEffect(() => {
+    api.getRecentComments().then(setRecentComments).catch(() => setRecentComments([]));
+  }, []);
+
+  let lastViewedId = null;
+  try {
+    lastViewedId = localStorage.getItem('kv_last_viewed_article');
+  } catch {
+    // ignore
+  }
+  const continueArticle = lastViewedId ? articles.find((a) => String(a.id) === lastViewedId) : null;
+
   const recentArticles = [...articles].sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 4);
   const popularArticles = [...articles].sort((a, b) => b.views - a.views).slice(0, 4);
+  const favoriteArticles = articles.filter((a) => a.favorite).slice(0, 6);
 
   const topTags = [...tags].filter((t) => t.count > 0).sort((a, b) => b.count - a.count).slice(0, 6);
 
@@ -29,7 +53,7 @@ export default function Home({
         <div style={{ fontSize: '1.7rem', fontWeight: 700, color: 'var(--text-strong)', marginBottom: '0.4rem' }}>ナレッジを探す</div>
         <div style={{ fontSize: '0.92rem', color: 'var(--text-muted)', marginBottom: '1.4rem' }}>たまった記事をキーワード・タグからすぐに見つけられます</div>
 
-        <div style={{ position: 'relative', marginBottom: '2.2rem' }}>
+        <div style={{ position: 'relative', marginBottom: '1.4rem' }}>
           <SearchBox placeholder="キーワードを入力して記事を検索..." value={searchText} onChange={setSearchText} height={52} style={{ width: '100%', fontSize: '1rem' }} />
           {q && (
             <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '0.5rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-lg)', zIndex: 30, overflow: 'hidden' }}>
@@ -61,6 +85,21 @@ export default function Home({
           )}
         </div>
 
+        {continueArticle && (
+          <div
+            onClick={() => onOpenArticle(continueArticle.id)}
+            className="kv-strip-card"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', background: 'var(--note-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0.9rem 1.2rem', cursor: 'pointer', marginBottom: '2.2rem' }}
+          >
+            <i className="bi bi-play-circle-fill" style={{ fontSize: '1.3rem', color: 'var(--primary)' }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--primary-dark)', marginBottom: '0.15rem' }}>続きから読む</div>
+              <div className="kv-line-clamp-1" style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-strong)' }}>{continueArticle.title}</div>
+            </div>
+            <i className="bi bi-chevron-right" style={{ color: 'var(--text-muted)' }} />
+          </div>
+        )}
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '2.2rem', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>よく使うタグ</span>
           {topTags.map((t) => (
@@ -88,7 +127,30 @@ export default function Home({
           })}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.6rem' }}>
+        {favoriteArticles.length > 0 && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-strong)' }}><i className="bi bi-star-fill" style={{ color: '#f59e0b', marginRight: 6 }} />お気に入り</div>
+              <span onClick={onShowFavorites} style={{ fontSize: '0.78rem', color: 'var(--primary-dark)', cursor: 'pointer', fontWeight: 600 }}>すべて見る</span>
+            </div>
+            <div style={{ display: 'flex', gap: '0.9rem', overflowX: 'auto', paddingBottom: '0.6rem', marginBottom: '2.2rem' }}>
+              {favoriteArticles.map((a) => {
+                const fm = folderMeta(folders, a.folder);
+                return (
+                  <div key={a.id} onClick={() => onOpenArticle(a.id)} className="kv-strip-card" style={{ flex: '0 0 220px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1rem 1.1rem', cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                      <i className={fm.icon} style={{ color: fm.color, fontSize: '0.8rem' }} />
+                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: fm.color }}>{fm.label}</span>
+                    </div>
+                    <div className="kv-line-clamp-2" style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-strong)', lineHeight: 1.4 }}>{a.title}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.6rem', marginBottom: '1.6rem' }}>
           <div>
             <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-strong)', marginBottom: '0.7rem' }}>よく参照される記事</div>
             {popularArticles.map((a, i) => (
@@ -113,6 +175,51 @@ export default function Home({
                   <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>{f.count}件</span>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.6rem' }}>
+          <div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-strong)', marginBottom: '0.7rem' }}>最近のアクティビティ</div>
+            {recentComments.length === 0 ? (
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>まだコメントはありません</div>
+            ) : (
+              recentComments.slice(0, 5).map((c) => (
+                <div key={c.id} onClick={() => onOpenArticle(c.articleId)} style={{ padding: '0.55rem 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-body)' }}>
+                    <span style={{ fontWeight: 700 }}>{c.author}</span> さんが
+                    <span className="kv-line-clamp-1" style={{ fontWeight: 700, display: 'inline' }}>「{c.articleTitle}」</span>
+                    にコメントしました
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{fmtRelative(c.createdAt)}</div>
+                </div>
+              ))
+            )}
+          </div>
+          <div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-strong)', marginBottom: '0.7rem' }}>プロジェクト概況</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.83rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>プロジェクト名</span>
+                <span style={{ fontWeight: 600 }}>{currentProject?.name || '-'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>保存先</span>
+                <span style={{ fontWeight: 600 }}>{currentStorage?.label || '-'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>記事数</span>
+                <span style={{ fontWeight: 600 }}>{articles.length}件</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>フォルダ数</span>
+                <span style={{ fontWeight: 600 }}>{folders.length}件</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>タグ数</span>
+                <span style={{ fontWeight: 600 }}>{tags.length}件</span>
+              </div>
             </div>
           </div>
         </div>

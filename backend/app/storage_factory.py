@@ -8,7 +8,7 @@ from .storage.box import BoxStorage
 from .storage.gdrive import GDriveStorage
 from .storage.sharepoint import SharePointStorage, resolve_site_id
 
-SECRET_FIELDS = {"awsSecretAccessKey", "boxClientSecret", "gdriveServiceAccountJson", "spoClientSecret"}
+SECRET_FIELDS = {"awsSecretAccessKey", "boxClientSecret", "gdriveServiceAccountJson", "spoClientSecret", "aiApiKey"}
 
 
 def mask_storage_config(config: dict) -> dict:

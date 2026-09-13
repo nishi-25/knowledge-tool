@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import project, folders, tags, articles, tools, comments, system, fs, auth, invites, admin, ping, support, data_io, apikeys, public_api
+from .routers import project, folders, tags, articles, tools, comments, system, fs, auth, invites, admin, ping, support, data_io, apikeys, public_api, notifications
 from .store import ensure_seeded
 from .admin_store import print_setup_token_if_needed
 from .config import APP_MODE
@@ -47,6 +47,7 @@ app.include_router(support.router)
 app.include_router(data_io.router)
 app.include_router(apikeys.router)
 app.include_router(public_api.router)
+app.include_router(notifications.router)
 
 
 @app.get("/api/health")

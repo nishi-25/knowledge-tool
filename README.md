@@ -116,6 +116,10 @@ curl -X POST -H "X-API-Key: kv_live_xxxxxxxx" -H "Content-Type: application/json
 
 APIキーは1つのプロジェクトに紐づき、そのプロジェクトの記事・フォルダのみ操作できます。レート制限があり、1つのAPIキーにつき1分間に120リクエストを超えると `429 Too Many Requests` が返ります。
 
+## AI機能（OCR・整理）
+
+エディタの「メモをOCRで読み込む」「キーワードから整理」は、設定画面の「AI設定」でAnthropic（Claude）のAPIキーを登録し有効化しないと動作しません（プロジェクトのオーナーのみ設定可能）。未設定の場合はその旨のエラーが表示されます。
+
 ## バージョニング
 
 `VERSION` ファイルと `backend/app/config.py` の `APP_VERSION` を単一の情報源とする。リリース時は両方を更新し、`CHANGELOG.md` にエントリを追加してから `git tag v<version>` する。

@@ -189,6 +189,22 @@ export default function App() {
 
   const currentForView = curArticle ? { ...curArticle, folderMeta: folderMeta(folders, curArticle.folder) } : null;
 
+  // 記事を実際に開いたとき（selectedIdが明示的にセットされたとき）だけ閲覧数を
+  // 増やす。curArticleはselectedIdが無いときfilteredArticles[0]にフォールバック
+  // するため、そちらでは増やさないようcurArticle.idとselectedIdの一致も見る。
+  useEffect(() => {
+    if (!selectedId || !curArticle || curArticle.id !== selectedId) return;
+    try {
+      localStorage.setItem('kv_last_viewed_article', String(selectedId));
+    } catch {
+      // ignore
+    }
+    api.incrementView(selectedId)
+      .then(({ views }) => setArticles((prev) => prev.map((a) => (a.id === selectedId ? { ...a, views } : a))))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
   const relatedArticles = useMemo(() => {
     if (!curArticle) return [];
     return articles
@@ -201,7 +217,7 @@ export default function App() {
   const goOrganize = () => setView('organize');
   const openFolderView = (id) => { setView('library'); setQuery(''); setActiveFolder(id); setActiveTag(null); setShowFavoritesOnly(false); };
   const openTagView = (tag) => { setView('library'); setActiveTag(tag); setActiveFolder(''); setShowFavoritesOnly(false); };
-  const openFavoritesView = () => { setShowFavoritesOnly(true); setQuery(''); setActiveTag(null); };
+  const openFavoritesView = () => { setView('library'); setShowFavoritesOnly(true); setQuery(''); setActiveTag(null); };
 
   const toggleFavorite = async (id) => {
     const updated = await api.toggleFavorite(id);
@@ -341,6 +357,10 @@ export default function App() {
     await Promise.all([refreshArticles(), refreshFolders(), refreshTags()]);
   };
 
+  const handleAiConfigUpdated = async () => {
+    setCurrentProject(await api.getCurrentProject());
+  };
+
   const handleLogout = async () => {
     await api.logout();
     window.location.href = '/';
@@ -416,6 +436,7 @@ export default function App() {
         onNewArticle={startNewArticle}
         onNewFolder={openNewFolderPrompt}
         onNewTag={openNewTagPrompt}
+        onOpenArticle={(id) => { setView('library'); setSelectedId(id); }}
         isOwner={isOwner}
         currentUser={currentUser}
         onLogout={handleLogout}
@@ -426,9 +447,12 @@ export default function App() {
           articles={articles}
           folders={folders}
           tags={tags}
+          currentProject={currentProject}
+          currentStorage={currentStorage}
           onOpenArticle={(id) => { setView('library'); setSelectedId(id); }}
           onToggleTagFilter={openTagView}
           onOpenFolder={openFolderView}
+          onShowFavorites={openFavoritesView}
           onSearchAll={(q) => { setQuery(q); setView('library'); }}
         />
       )}
@@ -492,17 +516,20 @@ export default function App() {
           isOwner={isOwner}
           currentUserId={currentUser.id}
           isDesktopApp={isDesktopApp}
+          currentProject={currentProject}
           onChangeStorage={changeCurrentStorage}
           onSwitchProject={openProjectSwitcher}
           onServerLinked={handleServerLinked}
           onServerUnlinked={handleServerUnlinked}
           onDataImported={() => Promise.all([refreshArticles(), refreshFolders(), refreshTags()])}
+          onAiConfigUpdated={handleAiConfigUpdated}
         />
       )}
 
       {view === 'editor' && editorState && isOwner && (
         <Editor
           key={editorState.draftId ?? 'new'}
+          articleId={editorState.draftId}
           initialDraft={editorState.initialDraft}
           initialTags={editorState.initialTags}
           folders={folders}

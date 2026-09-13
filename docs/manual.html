@@ -56,6 +56,7 @@
     <div class="toc-group-title">データ連携</div>
     <a href="#data-export">JSONエクスポート・インポート</a>
     <a href="#api">外部API</a>
+    <a href="#ai-features">AI機能（OCR・整理）</a>
 
     <div class="toc-group-title">その他</div>
     <a href="#faq">よくある質問</a>
@@ -262,6 +263,16 @@
         <tr><td>GET</td><td><code>/api/v1/tags</code></td><td>タグ一覧を取得</td></tr>
         <tr><td>GET</td><td><code>/api/v1/version</code></td><td>インストールされているバージョンを取得（APIキー不要）</td></tr>
       </table>
+    </section>
+
+    <section class="manual-section" id="ai-features">
+      <h2>AI機能（OCR・整理）</h2>
+      <p class="lead">エディタの「メモをOCRで読み込む」（画像から文字起こし）、「キーワードから整理」（タグ・見出し構成の提案）は、Anthropic（Claude）のAPIキーを設定しないと使えません。</p>
+
+      <h3>設定方法</h3>
+      <p>「設定」画面の「AI設定」カードから、<a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer">Anthropicのコンソール</a>で発行したAPIキーを入力し、「接続テストする」で確認したうえで、有効化して保存してください（プロジェクトのオーナーのみ設定できます）。</p>
+      <div class="tip-box">💡 未設定・無効のまま使おうとすると、エディタ側でその旨のメッセージが表示されます。エラーメッセージが出た場合は設定画面を確認してください。</div>
+      <div class="warn-box">⚠️ APIキーの利用には、Anthropic側の料金が発生する場合があります。ご自身のAnthropicアカウントの利用状況・料金プランをご確認ください。</div>
     </section>
 
     <section class="manual-section" id="faq">

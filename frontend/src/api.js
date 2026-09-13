@@ -181,6 +181,20 @@ export const api = {
   updateArticle: (id, data) => request(`/articles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteArticle: (id) => request(`/articles/${id}`, { method: 'DELETE' }),
   toggleFavorite: (id) => request(`/articles/${id}/favorite`, { method: 'POST' }),
+  incrementView: (id) => request(`/articles/${id}/view`, { method: 'POST' }),
+
+  listRevisions: (articleId) => request(`/articles/${articleId}/revisions`),
+  restoreRevision: (articleId, revisionId) => request(`/articles/${articleId}/revisions/${revisionId}/restore`, { method: 'POST' }),
+
+  updateAiConfig: (enabled, apiKey) => request('/projects/current/ai-config', { method: 'PUT', body: JSON.stringify({ enabled, apiKey }) }),
+  testAiKey: (apiKey = '') => request('/projects/current/ai-test', { method: 'POST', body: JSON.stringify({ apiKey }) }),
+
+  listNotifications: () => request('/notifications'),
+  getUnreadNotificationCount: () => request('/notifications/unread-count'),
+  markNotificationRead: (id) => request(`/notifications/${id}/read`, { method: 'POST' }),
+  markAllNotificationsRead: () => request('/notifications/read-all', { method: 'POST' }),
+
+  getRecentComments: () => request('/comments/recent'),
 
   listApiKeys: () => request('/apikeys'),
   createApiKey: (label) => request('/apikeys', { method: 'POST', body: JSON.stringify({ label }) }),
@@ -191,7 +205,7 @@ export const api = {
   importProject: (data) => request('/import/project', { method: 'POST', body: JSON.stringify(data) }),
   importArticle: (data) => request('/import/article', { method: 'POST', body: JSON.stringify(data) }),
 
-  runOcr: () => request('/tools/ocr', { method: 'POST' }),
+  runOcr: (imageBase64, mediaType) => request('/tools/ocr', { method: 'POST', body: JSON.stringify({ imageBase64, mediaType }) }),
   runOrganize: (keywords) => request('/tools/organize', { method: 'POST', body: JSON.stringify({ keywords }) }),
 
   getComments: (articleId) => request(`/articles/${articleId}/comments`),

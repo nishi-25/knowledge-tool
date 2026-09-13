@@ -3,9 +3,10 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..schemas import ProjectCreateIn, StorageConfig
+from ..schemas import ProjectCreateIn, StorageConfig, AiConfigIn, AiTestIn
 from ..seed import STORAGE_OPTIONS
 from ..storage_factory import mask_storage_config, resolved_local_path, test_storage_config
+from ..ai_utils import test_ai_key
 from ..store import (
     projects_index_store,
     get_articles_store,
@@ -16,6 +17,7 @@ from ..store import (
 )
 from ..auth import get_current_user, users_store, public_user
 from ..email_utils import send_notification_if_enabled
+from ..notifications_store import notify_user
 from ..membership import get_member, resolve_current_project, require_owner, is_owner, owner_count
 
 router = APIRouter(prefix="/api/projects", tags=["project"])
@@ -206,6 +208,29 @@ def get_storage_options():
     return STORAGE_OPTIONS
 
 
+# --- AI設定（OCR・整理機能で使う） --------------------------------------------
+
+@router.put("/current/ai-config")
+def update_ai_config(payload: AiConfigIn, user: dict = Depends(get_current_user)):
+    project = resolve_current_project(user)
+    require_owner(project, user)
+    project["aiEnabled"] = payload.enabled
+    if payload.apiKey.strip():
+        project["aiApiKey"] = payload.apiKey.strip()
+    projects_index_store.write(project["id"], project)
+    return _present_project(project, user)
+
+
+@router.post("/current/ai-test")
+def ai_test(payload: AiTestIn, user: dict = Depends(get_current_user)):
+    project = resolve_current_project(user)
+    api_key = payload.apiKey.strip() or project.get("aiApiKey", "")
+    if not api_key:
+        return {"ok": False, "message": "APIキーを入力してください"}
+    ok, message = test_ai_key(api_key)
+    return {"ok": ok, "message": message}
+
+
 # --- メンバー招待・承認 -----------------------------------------------------
 
 @router.post("/current/invite")
@@ -265,6 +290,7 @@ def approve_request(user_id: str, user: dict = Depends(get_current_user)):
             f'【Knowledge View】「{project["name"]}」への参加が承認されました',
             f'{approved_user["displayName"]} 様\n\n「{project["name"]}」への参加申請が承認されました。\nアプリからログインしてご利用ください。',
         )
+        notify_user(user_id, "memberApproved", f'「{project["name"]}」への参加が承認されました', link={"projectId": project["id"]})
     return {"ok": True}
 
 

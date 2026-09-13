@@ -7,10 +7,11 @@ import ServerLinkCard from './ServerLinkCard.jsx';
 import DataIOCard from './DataIOCard.jsx';
 import ApiKeysCard from './ApiKeysCard.jsx';
 import DesktopPortCard from './DesktopPortCard.jsx';
+import AiSettingsCard from './AiSettingsCard.jsx';
 
 export default function Settings({
-  projectName, currentStorage, resolvedPath, systemInfo, isOwner, currentUserId, isDesktopApp,
-  onSwitchProject, onChangeStorage, onServerLinked, onServerUnlinked, onDataImported,
+  projectName, currentStorage, resolvedPath, systemInfo, isOwner, currentUserId, isDesktopApp, currentProject,
+  onSwitchProject, onChangeStorage, onServerLinked, onServerUnlinked, onDataImported, onAiConfigUpdated,
 }) {
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -55,6 +56,7 @@ export default function Settings({
         {isDesktopApp && <DesktopPortCard />}
         <DataIOCard projectName={projectName} isOwner={isOwner} onImported={onDataImported} />
         {isOwner && <ApiKeysCard />}
+        {isOwner && <AiSettingsCard currentProject={currentProject} onUpdated={onAiConfigUpdated} />}
 
         <Card title="アプリ情報" icon="info-circle" style={{ marginTop: '1.2rem' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>

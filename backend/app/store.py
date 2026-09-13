@@ -64,6 +64,10 @@ def get_comments_store(project_id: str):
     return build_adapter(_project_storage_config(project_id), project_id, "comments")
 
 
+def get_article_revisions_store(project_id: str):
+    return build_adapter(_project_storage_config(project_id), project_id, "revisions")
+
+
 def next_article_id(articles_store) -> int:
     ids = [int(a["id"]) for a in articles_store.list()] or [0]
     return max(ids) + 1

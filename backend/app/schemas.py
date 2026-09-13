@@ -12,6 +12,9 @@ class Article(BaseModel):
     favorite: bool = False
     excerpt: str = ""
     bodyHtml: str = ""
+    createdAt: Optional[str] = None
+    createdBy: Optional[str] = None
+    createdByName: Optional[str] = None
 
 
 class ArticleIn(BaseModel):
@@ -80,6 +83,20 @@ class ProjectCreateIn(BaseModel):
 
 class OrganizeIn(BaseModel):
     keywords: str
+
+
+class OcrIn(BaseModel):
+    imageBase64: str
+    mediaType: str
+
+
+class AiConfigIn(BaseModel):
+    enabled: bool = False
+    apiKey: str = ""  # 空文字は「変更しない」として扱う（enabledの切り替えだけしたい場合など）
+
+
+class AiTestIn(BaseModel):
+    apiKey: str = ""  # 空ならプロジェクトに保存済みのキーで試す
 
 
 class Comment(BaseModel):

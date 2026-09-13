@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Avatar from './ui/Avatar.jsx';
+import NotificationBell from './NotificationBell.jsx';
 
 const RAIL_ITEMS = [
   { key: 'home', label: 'ホーム', icon: 'bi bi-house' },
@@ -7,7 +8,7 @@ const RAIL_ITEMS = [
   { key: 'organize', label: '区分管理', icon: 'bi bi-tags' },
 ];
 
-export default function IconRail({ activeKey, onNavigate, onNewArticle, onNewFolder, onNewTag, isOwner, currentUser, onLogout }) {
+export default function IconRail({ activeKey, onNavigate, onNewArticle, onNewFolder, onNewTag, isOwner, currentUser, onLogout, onOpenArticle }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
 
@@ -37,6 +38,8 @@ export default function IconRail({ activeKey, onNavigate, onNewArticle, onNewFol
         <i className="bi bi-question-circle" style={{ fontSize: '1.15rem' }} />
         <span style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: '0.02em' }}>ヘルプ</span>
       </a>
+
+      <NotificationBell onOpenArticle={onOpenArticle} />
 
       <div style={{ flex: 1 }} />
 

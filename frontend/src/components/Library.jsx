@@ -117,7 +117,9 @@ export default function Library({
               <span style={{ fontSize: '0.78rem', fontWeight: 700, color: current.folderMeta.color, whiteSpace: 'nowrap', flexShrink: 0 }}>
                 <i className={current.folderMeta.icon} style={{ marginRight: 4 }} />{current.folderMeta.label}
               </span>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>{fmtDate(current.updated)} 更新 ・ 閲覧数 {current.views}</span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {fmtDate(current.updated)} 更新 ・ 閲覧数 {current.views}{current.createdByName ? ` ・ 作成者：${current.createdByName}` : ''}
+              </span>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
                 <Button size="sm" variant="ghost" icon={current.favorite ? 'star-fill' : 'star'} onClick={() => onToggleFavorite(current.id)}>
                   {current.favorite ? 'お気に入り済み' : 'お気に入り'}

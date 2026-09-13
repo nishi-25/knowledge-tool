@@ -10,6 +10,7 @@ import VideoEmbedModal from './VideoEmbedModal.jsx';
 import CalendarModal from './CalendarModal.jsx';
 import DatePickerModal from './DatePickerModal.jsx';
 import DrawioModal, { extractDrawioXml } from './DrawioModal.jsx';
+import RevisionHistoryModal from './RevisionHistoryModal.jsx';
 import { api } from '../api.js';
 import { calloutMeta, calloutVariants, escapeHtmlAttr } from '../utils.js';
 import { sanitizeArticleHtml } from '../sanitizeHtml.js';
@@ -127,19 +128,21 @@ function expandHtml() {
   );
 }
 
-export default function Editor({ initialDraft, initialTags, folders, allTags, onCancel, onSave }) {
+export default function Editor({ articleId, initialDraft, initialTags, folders, allTags, onCancel, onSave }) {
   const bodyEditRef = useRef(null);
   const savedRangeRef = useRef(null);
   const diagramEditTargetRef = useRef(null);
   const draggedBlockRef = useRef(null);
   const pendingDragBlockRef = useRef(null);
   const imageInputRef = useRef(null);
+  const ocrInputRef = useRef(null);
   const [draft, setDraft] = useState(initialDraft);
   const [draftTags, setDraftTags] = useState(initialTags);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [keywordInput, setKeywordInput] = useState('');
   const [suggestedTags, setSuggestedTags] = useState(null);
   const [suggestedOutline, setSuggestedOutline] = useState(null);
+  const [revisionModalOpen, setRevisionModalOpen] = useState(false);
   const [tagMenuOpen, setTagMenuOpen] = useState(false);
   const [insertModalOpen, setInsertModalOpen] = useState(false);
   const [keywordMenuOpen, setKeywordMenuOpen] = useState(false);
@@ -217,28 +220,59 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
   const toggleDraftTag = (tag) => setDraftTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   const addSuggestedTag = (tag) => setDraftTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]));
 
-  const runOcr = async () => {
-    if (ocrLoading) return;
+  const triggerOcrUpload = () => {
+    saveSelectionRange();
+    ocrInputRef.current?.click();
+  };
+
+  const handleOcrFileChange = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || ocrLoading) return;
     setOcrLoading(true);
-    try {
-      const res = await api.runOcr();
-      insertHtmlAtCursor(`<p>${res.text}</p>`);
-    } finally {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const [prefix, base64] = String(reader.result).split(',');
+        const mediaType = prefix.match(/^data:(.*);base64$/)?.[1] || file.type || 'image/png';
+        const res = await api.runOcr(base64, mediaType);
+        insertHtmlAtCursor(`<p>${res.text}</p>`);
+      } catch (err) {
+        window.alert(err.message || 'OCRに失敗しました');
+      } finally {
+        setOcrLoading(false);
+      }
+    };
+    reader.onerror = () => {
       setOcrLoading(false);
-    }
+      window.alert('画像の読み込みに失敗しました');
+    };
+    reader.readAsDataURL(file);
   };
 
   const runKeywordOrganizer = async () => {
     if (!keywordInput.trim()) return;
-    const res = await api.runOrganize(keywordInput);
-    setSuggestedTags(res.tags);
-    setSuggestedOutline(res.outline);
+    try {
+      const res = await api.runOrganize(keywordInput);
+      setSuggestedTags(res.tags);
+      setSuggestedOutline(res.outline);
+    } catch (err) {
+      window.alert(err.message || '整理に失敗しました');
+    }
   };
 
   const handleSave = () => {
     if (!draft.title.trim()) return;
     const bodyHtml = bodyEditRef.current ? bodyEditRef.current.innerHTML : draft.bodyHtml;
     onSave({ title: draft.title, folder: draft.folder, tags: draftTags, bodyHtml });
+  };
+
+  const handleRestored = (restored) => {
+    setDraft((d) => ({ ...d, title: restored.title, folder: restored.folder || '' }));
+    setDraftTags(restored.tags || []);
+    if (bodyEditRef.current) {
+      bodyEditRef.current.innerHTML = sanitizeArticleHtml(restored.bodyHtml || '');
+    }
   };
 
   const handleBodyClick = (e) => {
@@ -460,7 +494,7 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
     {
       key: 'tools', label: 'ツール', icon: 'bi bi-tools',
       items: [
-        { key: 'ocr', icon: 'bi bi-camera', label: 'メモをOCRで読み込む', description: '手書きメモなどの画像から文字を読み取ります', run: () => runOcr() },
+        { key: 'ocr', icon: 'bi bi-camera', label: 'メモをOCRで読み込む', description: '手書きメモなどの画像から文字を読み取ります（設定画面でAI機能の有効化が必要）', run: () => triggerOcrUpload() },
         { key: 'keyword', icon: 'bi bi-stars', label: 'キーワードから整理', description: '入力したキーワードから見出しやタグの案を提案します', run: () => setKeywordMenuOpen(true) },
       ],
     },
@@ -473,6 +507,7 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
           <i className="bi bi-x-lg" />閉じる
         </div>
         <div style={{ flex: 1 }} />
+        {articleId && <Button variant="ghost" icon="clock-history" onClick={() => setRevisionModalOpen(true)} size="sm">変更履歴</Button>}
         <Button variant="primary" icon="check2" onClick={handleSave} size="sm">保存する</Button>
       </div>
 
@@ -604,6 +639,7 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
             style={{ flex: 1, minHeight: 360, boxSizing: 'border-box', fontFamily: 'var(--font-sans)', padding: '1.2rem 1.4rem', border: '1px solid var(--border)', borderRadius: '0 0 10px 10px', outline: 'none', background: 'var(--surface)' }}
           />
           <input type="file" ref={imageInputRef} accept="image/*" onChange={handleImageFileChange} style={{ display: 'none' }} />
+          <input type="file" ref={ocrInputRef} accept="image/*" onChange={handleOcrFileChange} style={{ display: 'none' }} />
         </div>
       </div>
 
@@ -650,6 +686,13 @@ export default function Editor({ initialDraft, initialTags, folders, allTags, on
         initialXml={drawioInitialXml}
         onClose={() => setDrawioModalOpen(false)}
         onSubmit={handleDrawioSubmit}
+      />
+
+      <RevisionHistoryModal
+        open={revisionModalOpen}
+        articleId={articleId}
+        onClose={() => setRevisionModalOpen(false)}
+        onRestored={handleRestored}
       />
     </div>
   );

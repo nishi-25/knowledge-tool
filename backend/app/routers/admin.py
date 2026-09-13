@@ -20,6 +20,7 @@ from ..config import APP_MODE
 from ..email_settings import get_email_config, save_email_config
 from ..email_utils import EmailDisabledError, EmailNotConfiguredError, send_email, send_notification_if_enabled, send_test_email
 from ..membership import get_member, owner_count
+from ..notifications_store import notify_user
 from ..rate_limit import enforce_rate_limit
 from ..schemas import (
     AdminBulkIdsIn,
@@ -385,6 +386,7 @@ def admin_approve_member(project_id: str, user_id: str, _: None = Depends(get_cu
             f'【Knowledge View】「{project["name"]}」への参加が承認されました',
             f'{approved_user["displayName"]} 様\n\n「{project["name"]}」への参加申請が承認されました。\nアプリからログインしてご利用ください。',
         )
+        notify_user(user_id, "memberApproved", f'「{project["name"]}」への参加が承認されました', link={"projectId": project_id})
     return {"ok": True}
 
 
