@@ -3,6 +3,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const http = require('http');
 const fs = require('fs');
+const crypto = require('crypto');
 const url = require('url');
 const portConfig = require('./port-config');
 
@@ -10,9 +11,17 @@ const portConfig = require('./port-config');
 // （実行中のバックエンドを別ポートへ移し替えることはしない）。
 const KV_PORT = portConfig.getPort(app.getPath('userData'));
 const FRONTEND_SCHEME = 'app';
+// 終了時にバックエンドへ穏当な停止を要求するための、起動ごとの使い捨てトークン。
+const SHUTDOWN_TOKEN = crypto.randomBytes(24).toString('hex');
+const GRACEFUL_STOP_TIMEOUT_MS = 8000;
+const MIN_SPLASH_MS = 600;
 let backendProcess = null;
 let backendReady = false;
 let fatalErrorShown = false;
+let splashWindow = null;
+let mainWindow = null;
+let quitInProgress = false;
+let readyToQuit = false;
 
 // Chromium blocks cross-origin fetches for <script type="module"> (which is
 // how Vite's production build always emits its entry script) when the page
@@ -30,6 +39,7 @@ protocol.registerSchemesAsPrivileged([
 function showFatalError(message) {
   if (fatalErrorShown) return;
   fatalErrorShown = true;
+  closeSplash();
   dialog.showErrorBox('Knowledge View の起動に失敗しました', message);
   app.quit();
 }
@@ -44,6 +54,68 @@ function killBackend() {
   } else {
     backendProcess.kill();
   }
+}
+
+function backendRunning() {
+  return Boolean(backendProcess) && backendProcess.exitCode === null && backendProcess.signalCode === null;
+}
+
+function showSplash(mode) {
+  closeSplash();
+  splashWindow = new BrowserWindow({
+    width: 360,
+    height: 240,
+    frame: false,
+    resizable: false,
+    movable: true,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    center: true,
+    show: false,
+    backgroundColor: '#0f172a',
+    icon: path.join(__dirname, 'assets', 'icon.png'),
+    webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false },
+  });
+  splashWindow.once('ready-to-show', () => splashWindow && splashWindow.show());
+  splashWindow.loadFile(path.join(__dirname, 'splash.html'), { query: { mode } });
+}
+
+function closeSplash() {
+  if (splashWindow && !splashWindow.isDestroyed()) splashWindow.destroy();
+  splashWindow = null;
+}
+
+function requestBackendShutdown() {
+  return new Promise((resolve) => {
+    const req = http.request({
+      host: '127.0.0.1',
+      port: KV_PORT,
+      path: '/api/desktop/shutdown',
+      method: 'POST',
+      headers: { 'X-KV-Shutdown-Token': SHUTDOWN_TOKEN, 'Content-Length': 0 },
+      timeout: 3000,
+    }, (res) => { res.resume(); resolve(res.statusCode === 200); });
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => { req.destroy(); resolve(false); });
+    req.end();
+  });
+}
+
+// 処理中の保存を完了させてからバックエンドを止める。一定時間内に止まらなければ
+// 従来どおり強制終了にフォールバックする（終了できないままアプリが残るのを防ぐ）。
+async function stopBackendGracefully() {
+  if (!backendRunning()) return;
+  const exited = new Promise((resolve) => backendProcess.once('exit', resolve));
+  const accepted = await requestBackendShutdown();
+  if (accepted) {
+    const timedOut = await Promise.race([
+      exited.then(() => false),
+      new Promise((resolve) => setTimeout(() => resolve(true), GRACEFUL_STOP_TIMEOUT_MS)),
+    ]);
+    if (!timedOut) return;
+  }
+  killBackend();
 }
 
 function backendExecutablePath() {
@@ -87,6 +159,7 @@ function startBackend() {
       KV_MODE: 'desktop',
       KV_DATA_DIR_LOCAL: dataDir,
       KV_PORT: String(KV_PORT),
+      KV_SHUTDOWN_TOKEN: SHUTDOWN_TOKEN,
     },
     stdio: 'ignore',
   });
@@ -130,7 +203,10 @@ function waitForBackend(timeoutMs = 15000) {
   });
 }
 
-async function createWindow() {
+async function startApp() {
+  showSplash('starting');
+  const splashShownAt = Date.now();
+
   try {
     startBackend();
   } catch (e) {
@@ -152,9 +228,18 @@ async function createWindow() {
     return;
   }
 
+  // 起動が一瞬で終わった場合でも、スプラッシュが点滅して見えないよう最低限表示する
+  const elapsed = Date.now() - splashShownAt;
+  if (elapsed < MIN_SPLASH_MS) await new Promise((r) => setTimeout(r, MIN_SPLASH_MS - elapsed));
+  if (quitInProgress) return;
+  createMainWindow();
+}
+
+function createMainWindow() {
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
+    show: false,
     icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -164,6 +249,14 @@ async function createWindow() {
       // コマンドライン引数経由で渡す（preload.jsがprocess.argvから読む）。
       additionalArguments: [`--kv-port=${KV_PORT}`],
     },
+  });
+  mainWindow = win;
+  win.once('ready-to-show', () => {
+    win.show();
+    closeSplash();
+  });
+  win.on('closed', () => {
+    if (mainWindow === win) mainWindow = null;
   });
   win.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
     console.error('画面の読み込みに失敗しました:', errorCode, errorDescription);
@@ -178,8 +271,10 @@ ipcMain.handle('kv:set-port', (_event, port) => {
 });
 
 ipcMain.handle('kv:relaunch', () => {
+  // app.exit() だと before-quit を経由せずバックエンドが取り残されるため、
+  // 通常の終了処理（穏当な停止）を通してから再起動する。
   app.relaunch();
-  app.exit(0);
+  app.quit();
 });
 
 ipcMain.handle('kv:pick-folder', async () => {
@@ -193,9 +288,10 @@ ipcMain.handle('kv:pick-folder', async () => {
 
 app.whenReady().then(() => {
   registerFrontendProtocol();
-  createWindow();
+  startApp();
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    // macOSでウィンドウだけ閉じた後の再表示。バックエンドは動き続けているので再起動しない。
+    if (backendReady && !quitInProgress && BrowserWindow.getAllWindows().length === 0) createMainWindow();
   });
 });
 
@@ -203,6 +299,23 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('before-quit', () => {
-  killBackend();
+app.on('before-quit', (event) => {
+  if (readyToQuit) return;
+  event.preventDefault();
+  if (quitInProgress) return;
+  quitInProgress = true;
+
+  (async () => {
+    if (backendRunning()) {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide();
+      if (!fatalErrorShown) showSplash('stopping');
+      const startedAt = Date.now();
+      await stopBackendGracefully();
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < MIN_SPLASH_MS) await new Promise((r) => setTimeout(r, MIN_SPLASH_MS - elapsed));
+    }
+    closeSplash();
+    readyToQuit = true;
+    app.quit();
+  })();
 });
